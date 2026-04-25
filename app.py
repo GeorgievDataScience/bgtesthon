@@ -199,14 +199,14 @@ def render_projection(projection_data: dict):
     st.caption("👉 How your rent changes year by year")
     view_mode = st.radio(
         "Projection view mode",
-        ["📋 Only Table", "📊 Only Chart", "📋📊 Table and Chart"],
+        ["📋 Only Table", "📊 Only Chart"],
         horizontal=True,
         key="projection_view_mode",
         label_visibility="collapsed",
     )
 
     # Таблица: Your rent today and in the future
-    if view_mode in ["📋 Only Table", "📋📊 Table and Chart"]:
+    if view_mode == "📋 Only Table":
         summary_df_display = projection_data["summary_df"].copy()
         # Без pandas Styler (Styler генерира допълнителен HTML слой).
         # Форматираме числата като текст за показване.
@@ -264,7 +264,7 @@ def render_projection(projection_data: dict):
     bar_df = summary_df.sort_values("Bar Label").set_index("Bar Label")[
         ["Monthly Rent"]
     ]
-    if view_mode in ["📊 Only Chart", "📋📊 Table and Chart"]:
+    if view_mode == "📊 Only Chart":
         st.bar_chart(bar_df)
 
     # Още малко въздух преди Total cost
@@ -274,13 +274,13 @@ def render_projection(projection_data: dict):
     st.caption("👉 How much you pay in total over time")
     total_view_mode = st.radio(
         "Total view mode",
-        ["📋 Only Table", "📊 Only Chart", "📋📊 Table and Chart"],
+        ["📋 Only Table", "📊 Only Chart"],
         horizontal=True,
         key="total_view_mode",
         label_visibility="collapsed",
     )
     # Таблица за тотал разхода
-    if total_view_mode in ["📋 Only Table", "📋📊 Table and Chart"]:
+    if total_view_mode == "📋 Only Table":
         total_spending_display = projection_data["total_spending_df"].copy()
         # Без pandas Styler (Styler генерира допълнителен HTML слой).
         total_spending_display["Total Spending"] = total_spending_display[
@@ -307,7 +307,7 @@ def render_projection(projection_data: dict):
         total_df.sort_values("Bar Label")
         .set_index("Bar Label")[["Total Spending"]]
     )
-    if total_view_mode in ["📊 Only Chart", "📋📊 Table and Chart"]:
+    if total_view_mode == "📊 Only Chart":
         st.bar_chart(total_bar_df)
 
     mapping_native = load_edited_table_native()
