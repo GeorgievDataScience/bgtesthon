@@ -198,7 +198,7 @@ def render_projection(projection_data: dict):
     st.subheader("🏠 Rent Over Time")
     st.caption("👉 How your rent changes year by year")
     view_mode = st.radio(
-        "",
+        "Projection view mode",
         ["📋 Only Table", "📊 Only Chart", "📋📊 Table and Chart"],
         horizontal=True,
         key="projection_view_mode",
@@ -273,7 +273,7 @@ def render_projection(projection_data: dict):
     st.subheader("💸 Total Rent Paid")
     st.caption("👉 How much you pay in total over time")
     total_view_mode = st.radio(
-        "",
+        "Total view mode",
         ["📋 Only Table", "📊 Only Chart", "📋📊 Table and Chart"],
         horizontal=True,
         key="total_view_mode",
@@ -346,7 +346,7 @@ def render_projection(projection_data: dict):
             _pcm
         ]
     metric = st.radio(
-        "",
+        "Projection metric",
         ["Monthly Rent", "Annual Rent", "Total Rent Paid"],
         horizontal=True,
         key="projection_chart_metric",
