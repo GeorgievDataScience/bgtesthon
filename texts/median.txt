@@ -1,0 +1,10 @@
+This scenario reflects typical rent growth, based on the median of historical changes in rent.
+This means that about half of the years between 1983 and 2025 experienced higher growth, and half experienced lower growth.
+
+This represents a common real-world outcome, aligned with long-term historical patterns.
+
+The model uses the Consumer Price Index (CPI) – Rent of Primary Residence, averaging monthly values into yearly figures and comparing each year to the previous one to calculate year-over-year percentage changes.
+
+For example, if the index rises from 100 to 103, this corresponds to a 3% annual increase in rent. This process is repeated across all years to build the historical distribution.
+
+These results are based on historical data and show what could happen if future trends resemble the past—they are not predictions.

@@ -1,0 +1,16 @@
+from;to;comparison;comparison02;comparison03
+0;5;➡️ That's a junk food;➡️ That's a bus ticket;➡️ That's a Lottery ticket
+6;10;➡️ That's a meal at a fast food restauranт;➡️ That's a cheap t-shirt;➡️ That's a socks
+11;30;➡️ That's a meal at a casual restaurant;➡️ That's a cheap jeans;➡️ That's a good quality cotton t-shirt
+31;100;➡️ That's a pair of shoes;➡️ That's a dinner at a nice restaurant;➡️ That's a hoodie or jacket
+101;500;➡️ That's a one-way plane ticket;➡️ That's a 1–2 nights at a mid-range hotel;➡️ That's a budget tablet
+501;1000;➡️ That's a one night at a nice hotel;➡️ That's a last year’s iphone model;➡️ That's a high-quality winter jacket
+1001;3000;➡️ That's a luxury weekend at a resort;➡️ That's a gaming pc;➡️ That's a comfortable sofa
+3001;10000;➡️ That's a used car;➡️ That's a down payment for a new car;➡️ That's a VIP tickets to a sporting event
+10001;30000;➡️ That's a luxury vacation at europe or asia;➡️ That's a kitchen or bathroom renovation;➡️ That's a diamond ring
+30001;50000;➡️ That's a new mid-range car;➡️ That's a home renovation;➡️ That's a down payment for a house
+50001;100000;➡️ That's a luxury car;➡️ That's a flying on a private jet to a nice, warm location;➡️ That's a starting a small business
+100001;300000;➡️ That's a small apartment;➡️ That's a buying a house at an affordable neighborhood;➡️ That's a Porsche 911
+300001;500000;➡️ That's a luxury apartment”;➡️ That's a Ferrari;➡️ That's a investing at a startup
+500001;1000000;➡️ That's a large house at a good neighborhood;➡️ That's an investment at a collectible car;➡️ That's a hosting a vip party
+1000001;;➡️ That's a mansion with a large yard;➡️ That's a yacht;➡️ That's a private island

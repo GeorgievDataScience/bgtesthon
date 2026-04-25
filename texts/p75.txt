@@ -1,0 +1,10 @@
+This scenario reflects above-average rent growth, based on the top 25% of historical changes in rent.
+Similar levels of increase have occurred in roughly 1 out of 4 years between 1983 and 2025.
+
+This represents a higher-cost scenario, where rent grows faster than usual.
+
+The model uses the Consumer Price Index (CPI) – Rent of Primary Residence, converting monthly data into yearly values and calculating year-over-year percentage changes by comparing each year with the previous one.
+
+For example, if the index rises from 100 to 103, this corresponds to a 3% annual increase in rent. This calculation is repeated across all years to build the distribution.
+
+These results are based on historical data and are not predictions.

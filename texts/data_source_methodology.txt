@@ -1,0 +1,8 @@
+The application uses data from the US Consumer Price Index (CPI), specifically from the category Housing -> Rent of Primary Residence. This index measures how rental prices change over time--whether they increase or decrease compared to previous years.
+
+In its current form, the index has been in use since the early 1980s. It is calculated by the Bureau of Labor Statistics. The base period is 1982-1984, which is set at 100 points.
+
+Example:
+If the index for "Rent of Primary Residence" is 200 points in 2020, this means that rental prices have doubled compared to the base period (1982-1984).
+
+This provides us with an official and reliable data source that has been tracking rental price movements on a monthly basis for about 50 years. Using the monthly data, we can calculate year-over-year changes. Based on these annual changes, we construct our four main scenarios.
