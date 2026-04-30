@@ -24,21 +24,6 @@ def fmt(n: int | float) -> str:
     return f"{n:,.0f}".replace(",", " ")
 
 
-
-def load_explanation_text(name: str) -> str:
-    path = Path("texts") / name
-    return path.read_text(encoding="utf-8")
-
-
-def load_conclusion_text_by_stat_key(stat_key: str) -> str:
-    """Loads conclusion text file by statistic key."""
-    filename = f"{stat_key}.txt"
-    path = Path("texts") / filename
-    if not path.is_file():
-        return ""
-    return path.read_text(encoding="utf-8").strip()
-
-
 @st.cache_data
 def load_rent_range_mapping_en() -> pd.DataFrame:
     path = Path("data") / "rent_range_mapping_en.csv"
@@ -356,14 +341,6 @@ def render_projection(projection_data: dict):
     chart_df = projection_data["chart_df"].set_index("Year")
     st.line_chart(chart_df[[chart_col]])
 
-    st.subheader("Conclusion")
-    st.caption("👉 How realistic is this scenario")
-    conclusion_text = load_conclusion_text_by_stat_key(
-        str(projection_data.get("stat_key", ""))
-    )
-    if conclusion_text:
-        st.write(conclusion_text)
-
 
 st.caption("Enter your monthly rent and press ▶️ Start")
 
@@ -444,7 +421,3 @@ if st.button("▶️ Start", type="primary", key="advanced_start"):
 
 if "projection_data" in st.session_state and not error:
     render_projection(st.session_state["projection_data"])
-
-
-with st.expander("How These Scenarios Are Built"):
-    st.text(load_explanation_text("rent_model_explanation.txt"))
