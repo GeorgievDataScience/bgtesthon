@@ -22,28 +22,6 @@ def fmt(n: int | float) -> str:
 
 
 @st.cache_data
-def load_rent_range_mapping_en() -> pd.DataFrame:
-    path = Path("data") / "rent_range_mapping_en.csv"
-    last_err: UnicodeDecodeError | None = None
-    for enc in ("utf-8-sig", "utf-8", "cp1252", "cp1250", "latin-1"):
-        try:
-            df = pd.read_csv(path, sep=";", encoding=enc)
-            break
-        except UnicodeDecodeError as e:
-            last_err = e
-    else:
-        raise last_err  # pragma: no cover
-    df = df.rename(
-        columns={
-            df.columns[0]: "from",
-            df.columns[1]: "to",
-            df.columns[2]: "template",
-        }
-    )
-    return df
-
-
-@st.cache_data
 def load_spending_ranges() -> pd.DataFrame:
     path = Path("data") / "spending_ranges.csv"
     last_err: UnicodeDecodeError | None = None
@@ -91,21 +69,6 @@ def spending_range_insight(
     if not comp or comp.lower() == "nan":
         return after, ""
     return after, comp
-
-
-def pick_rent_spending_template(mapping: pd.DataFrame, amount: int) -> str:
-    """Избира ред от mapping според Total Spending (инкл. граници)."""
-    for _, row in mapping.iterrows():
-        lo_i = int(row["from"])
-        hi = row["to"]
-        if pd.isna(hi) or (isinstance(hi, str) and str(hi).strip() == ""):
-            if amount >= lo_i:
-                return str(row["template"])
-            continue
-        hi_i = int(float(hi))
-        if lo_i <= amount <= hi_i:
-            return str(row["template"])
-    return ""
 
 
 def total_spending_for_horizon_years(projection_data: dict, n_years: int) -> int:
