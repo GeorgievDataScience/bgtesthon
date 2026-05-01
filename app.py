@@ -138,7 +138,7 @@ def render_rent_projection_summary(projection_data: dict) -> None:
         f"Scenario: {scenario}",
         f"Level: {level}",
         f"Annual Change: {annual:.2%}",
-        "This means rent doesn’t just grow steadily—it grows faster over time as each increase builds on the last.",
+        "Compound change",
     ]
     summary = pd.DataFrame(rows, columns=["Summary"])
     st.dataframe(summary, hide_index=True, width="stretch")
