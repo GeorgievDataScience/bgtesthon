@@ -1,5 +1,4 @@
 from pathlib import Path
-import random
 
 import pandas as pd
 import streamlit as st
@@ -16,8 +15,6 @@ TOTAL_RENT_INSIGHT_HORIZONS = [1, 2, 3, 5, 10, 15, 20, 30]
 TOTAL_RENT_INSIGHT_LABELS = [f"{y}Y" for y in TOTAL_RENT_INSIGHT_HORIZONS]
 
 RENT_OVER_TIME_SNAPSHOT_LABELS = ["1Y", "2Y", "3Y", "5Y", "10Y", "15Y", "20Y", "30Y"]
-
-_EDITED_NATIVE_COMPARISON_COLS = ("comparison", "comparison02", "comparison03")
 
 
 def fmt(n: int | float) -> str:
@@ -47,8 +44,8 @@ def load_rent_range_mapping_en() -> pd.DataFrame:
 
 
 @st.cache_data
-def load_edited_table_native() -> pd.DataFrame:
-    path = Path("data") / "edited_table_native.csv"
+def load_spending_ranges() -> pd.DataFrame:
+    path = Path("data") / "spending_ranges.csv"
     last_err: UnicodeDecodeError | None = None
     for enc in ("utf-8-sig", "utf-8", "cp1252", "cp1250", "latin-1"):
         try:
@@ -58,8 +55,8 @@ def load_edited_table_native() -> pd.DataFrame:
     raise last_err  # pragma: no cover
 
 
-def _find_edited_native_row(mapping: pd.DataFrame, amount: int) -> pd.Series | None:
-    """amount = abs(месечна разлика); инкл. граници, последният ред може да няма to."""
+def _find_spending_range_row(mapping: pd.DataFrame, amount: int) -> pd.Series | None:
+    """Интервал from–to (вкл.); последният ред може да няма to (amount >= from)."""
     for _, row in mapping.iterrows():
         lo_i = int(row["from"])
         hi = row["to"]
@@ -73,19 +70,27 @@ def _find_edited_native_row(mapping: pd.DataFrame, amount: int) -> pd.Series | N
     return None
 
 
-def pick_native_table_sentence(mapping: pd.DataFrame, amount_abs: int) -> str:
-    """Пълен текст от случайна от трите comparison колони (edited_table_native)."""
-    row_match = _find_edited_native_row(mapping, amount_abs)
+def spending_range_insight(
+    mapping: pd.DataFrame, years: int, spent_abs: int
+) -> tuple[str, str]:
+    """(after_year с подставени years/amount, comparison) от spending_ranges за spent_abs."""
+    row_match = _find_spending_range_row(mapping, spent_abs)
     if row_match is None:
-        return ""
-    comp_col = random.choice(_EDITED_NATIVE_COMPARISON_COLS)
-    comp_raw = row_match[comp_col]
+        return "", ""
+    tpl_raw = row_match.get("after_year", "")
+    tpl = "" if pd.isna(tpl_raw) else str(tpl_raw).strip()
+    after = (
+        tpl.replace("{years}", str(years)).replace("{amount}", fmt(spent_abs))
+        if tpl
+        else ""
+    )
+    comp_raw = row_match.get("comparison", "")
     if pd.isna(comp_raw):
-        return ""
+        return after, ""
     comp = str(comp_raw).strip()
     if not comp or comp.lower() == "nan":
-        return ""
-    return comp
+        return after, ""
+    return after, comp
 
 
 def pick_rent_spending_template(mapping: pd.DataFrame, amount: int) -> str:
@@ -116,9 +121,12 @@ def percent_increase_vs_today(growth_rate: float, years: int) -> float:
 
 
 def rent_after_years_snapshot_df(
-    growth_rate: float, rent_value: float, years: int
+    growth_rate: float,
+    rent_value: float,
+    years: int,
+    total_spent_at_horizon: int,
 ) -> pd.DataFrame:
-    """Едноколонна таблица (DataFrame): After N year(s); изречения от edited_table_native за месец и година."""
+    """Едноколонна таблица + insight от spending_ranges по кумулативен total за избрания хоризонт."""
     monthly_at_horizon = int(round(rent_value * (1 + growth_rate) ** years))
     row_will_be = f"Your rent will be {fmt(monthly_at_horizon)} per month"
     pct = percent_increase_vs_today(growth_rate, years)
@@ -135,13 +143,9 @@ def rent_after_years_snapshot_df(
         row_pct = f"{abs(pct_r2):.2f}% lower"
         row_amt = f"-{fmt(abs(monthly_delta))} less per month"
         row_year = f"That adds up to {fmt(yearly_delta)} per year"
-    mapping_native = load_edited_table_native()
-    native_sentence = pick_native_table_sentence(
-        mapping_native, abs(monthly_delta)
-    )
-    native_sentence_year = pick_native_table_sentence(
-        mapping_native, abs(yearly_delta)
-    )
+    mapping = load_spending_ranges()
+    spent_abs = abs(int(total_spent_at_horizon))
+    after_line, comparison_line = spending_range_insight(mapping, years, spent_abs)
     return pd.DataFrame(
         {
             col: [
@@ -149,10 +153,11 @@ def rent_after_years_snapshot_df(
                 row_pct,
                 "",
                 row_amt,
-                native_sentence,
                 "",
                 row_year,
-                native_sentence_year,
+                "",
+                after_line,
+                comparison_line,
                 "",
             ]
         }
@@ -213,10 +218,14 @@ def render_projection(projection_data: dict):
         )
         if rent_snap_pick:
             y_snap = int(rent_snap_pick.rstrip("Y"))
+            spent_snap = total_spending_for_horizon_years(
+                projection_data, y_snap
+            )
             snap_df = rent_after_years_snapshot_df(
                 projection_data["growth_rate"],
                 float(projection_data["rent_value"]),
                 y_snap,
+                spent_snap,
             )
             snap_col = snap_df.columns[0]
             st.dataframe(
@@ -295,7 +304,7 @@ def render_projection(projection_data: dict):
     if total_view_mode == "📊 Only Chart":
         st.bar_chart(total_bar_df)
 
-    mapping_native = load_edited_table_native()
+    mapping_spending = load_spending_ranges()
     st.caption("Pick a year to see what your rent turns into")
     horizon_pick = st.segmented_control(
         "Spending insight",
@@ -305,14 +314,16 @@ def render_projection(projection_data: dict):
         label_visibility="collapsed",
     )
 
-    insight_text = ""
     if horizon_pick:
         y = int(horizon_pick.rstrip("Y"))
         spent = total_spending_for_horizon_years(projection_data, y)
-        insight_text = pick_native_table_sentence(mapping_native, abs(spent))
-
-    if insight_text:
-        st.write(insight_text)
+        after_line, comp_line = spending_range_insight(
+            mapping_spending, y, abs(int(spent))
+        )
+        if after_line:
+            st.write(after_line)
+        if comp_line:
+            st.write(comp_line)
 
     # Единствен разделител – отделя табличните блокове от обобщаващата графика
     st.divider()

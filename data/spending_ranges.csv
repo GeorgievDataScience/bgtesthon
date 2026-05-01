@@ -1,0 +1,16 @@
+﻿from;to;after_year;comparison
+0;5;After {years} years you will have spent {amount}.;👉 That's a coffee ☕
+6;10;After {years} years you will have spent {amount}.;👉 That's a fast food meal 🍔
+11;30;After {years} years you will have spent {amount}.;👉 That's a t-shirt 👕
+31;100;After {years} years you will have spent {amount}.;👉 That's a pair of jeans 👖
+101;500;After {years} years you will have spent {amount}.;👉 That's a smartphone 📱
+501;1000;After {years} years you will have spent {amount}.;👉 That's a laptop 💻
+1001;5000;After {years} years you will have spent {amount}.;👉 That's a vacation 🏖️
+5001;30000;After {years} years you will have spent {amount}.;👉 That's a used car 🚗
+30001;50000;After {years} years you will have spent {amount}.;👉 That's a new car 🚘
+50001;100000;After {years} years you will have spent {amount}.;👉 That’s a down payment on a house 🏡
+100001;250000;After {years} years you will have spent {amount}.;👉 That's a studio apartment 🏢
+250001;500000;After {years} years you will have spent {amount}.;👉 That's a multi-room apartment 🏢
+500001;1000000;After {years} years you will have spent {amount}.;👉 That's a house in a good neighborhood 🏡
+1000001;5000000;After {years} years you will have spent {amount}.;👉 That's a mansion 🏰
+5000000;;After {years} years you will have spent {amount}.;👉 That's a mansion, a Ferrari and a yacht 🏰🏎️🛥️
