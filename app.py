@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from projection_service import build_projection_data
+from projection_service import build_projection_data, get_growth_rate_for_stat
 
 st.set_page_config(page_title="Monthly Rent", layout="centered")
 st.title("🏠 Explore Rent Scenarios")
@@ -376,6 +376,9 @@ stat_map = {
     "Min": "min",
     "Max": "max",
 }
+
+preview_growth_rate = get_growth_rate_for_stat(stat_map[level])
+st.caption(f"Annual Change: {preview_growth_rate:.2%}")
 
 if st.button("▶️ Start", type="primary", key="advanced_start"):
     if error:

@@ -18,15 +18,19 @@ def load_data() -> pd.DataFrame:
     return pd.read_csv(DATA_PATH)
 
 
+def get_growth_rate_for_stat(selected_stat_key: str) -> float:
+    df = load_data()
+    annual = annual_inflation_calc(df)
+    return summary_stats(annual, selected_stat_key)
+
+
 
 def build_projection_data(
     selected_stat_key: str,
     indicator_label: str,
     rent_value: float,
 ) -> dict:
-    df = load_data()
-    annual = annual_inflation_calc(df)
-    growth_rate = summary_stats(annual, selected_stat_key)
+    growth_rate = get_growth_rate_for_stat(selected_stat_key)
     result_df = rent_growth_df(30, rent_value, growth_rate)
 
     summary_df = rent_growth_simple_df(result_df)
