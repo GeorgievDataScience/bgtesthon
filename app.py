@@ -87,9 +87,8 @@ def rent_after_years_snapshot_df(
     growth_rate: float,
     rent_value: float,
     years: int,
-    total_spent_at_horizon: int,
 ) -> pd.DataFrame:
-    """Едноколонна таблица + insight от spending_ranges по кумулативен total за избрания хоризонт."""
+    """Под месечна и годишна разлика само comparison редове от spending_ranges."""
     monthly_at_horizon = int(round(rent_value * (1 + growth_rate) ** years))
     row_will_be = f"Your rent will be {fmt(monthly_at_horizon)} per month"
     pct = percent_increase_vs_today(growth_rate, years)
@@ -107,8 +106,10 @@ def rent_after_years_snapshot_df(
         row_amt = f"-{fmt(abs(monthly_delta))} less per month"
         row_year = f"That adds up to {fmt(yearly_delta)} per year"
     mapping = load_spending_ranges()
-    spent_abs = abs(int(total_spent_at_horizon))
-    after_line, comparison_line = spending_range_insight(mapping, years, spent_abs)
+    delta_abs = abs(int(monthly_delta))
+    _, delta_comparison = spending_range_insight(mapping, years, delta_abs)
+    yearly_abs = abs(int(yearly_delta))
+    _, yearly_delta_comparison = spending_range_insight(mapping, years, yearly_abs)
     return pd.DataFrame(
         {
             col: [
@@ -116,12 +117,10 @@ def rent_after_years_snapshot_df(
                 row_pct,
                 "",
                 row_amt,
+                delta_comparison,
                 "",
                 row_year,
-                "",
-                after_line,
-                comparison_line,
-                "",
+                yearly_delta_comparison,
             ]
         }
     )
@@ -181,14 +180,10 @@ def render_projection(projection_data: dict):
         )
         if rent_snap_pick:
             y_snap = int(rent_snap_pick.rstrip("Y"))
-            spent_snap = total_spending_for_horizon_years(
-                projection_data, y_snap
-            )
             snap_df = rent_after_years_snapshot_df(
                 projection_data["growth_rate"],
                 float(projection_data["rent_value"]),
                 y_snap,
-                spent_snap,
             )
             snap_col = snap_df.columns[0]
             st.dataframe(
