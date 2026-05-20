@@ -2,10 +2,41 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from projection_service import build_projection_data, get_growth_rate_for_stat
 
+PLAUSIBLE_SCRIPT_ID = "plausible-analytics"
+PLAUSIBLE_SCRIPT_SRC = "https://plausible.io/js/pa-uhz1-Tp2pq3SUeB5_9qm0.js"
+
+
+def inject_plausible_analytics() -> None:
+    """Inject Plausible into the parent page (Streamlit shell), not the component iframe."""
+    components.html(
+        f"""
+        <script>
+        (function () {{
+            var doc = parent.document;
+            if (doc.getElementById("{PLAUSIBLE_SCRIPT_ID}")) return;
+            var s = doc.createElement("script");
+            s.id = "{PLAUSIBLE_SCRIPT_ID}";
+            s.async = true;
+            s.src = "{PLAUSIBLE_SCRIPT_SRC}";
+            doc.head.appendChild(s);
+            var init = doc.createElement("script");
+            init.id = "{PLAUSIBLE_SCRIPT_ID}-init";
+            init.textContent = "window.plausible=window.plausible||function(){{(plausible.q=plausible.q||[]).push(arguments)}},plausible.init=plausible.init||function(i){{plausible.o=i||{{}}}};plausible.init()";
+            doc.head.appendChild(init);
+        }})();
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
+
+
 st.set_page_config(page_title="Monthly Rent", layout="centered")
+inject_plausible_analytics()
 st.title("🏠 Explore Rent Scenarios")
 
 MAX_RENT = 1_000_000
