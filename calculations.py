@@ -52,7 +52,7 @@ def rent_growth_df(years: int, monthly_rent: float, growth_rate: float) -> pd.Da
     Модел:
       MonthlyRent(year) = monthly_rent * (1 + growth_rate) ** year
     """
-    year = pd.Series(range(0, years + 1), name="Year")
+    year = pd.Series(range(0, years + 1), name="Година")
 
     monthly = (monthly_rent * (1 + growth_rate) ** year).round(0).astype(int)
     annual = (monthly * 12).round(0).astype(int)
@@ -60,10 +60,10 @@ def rent_growth_df(years: int, monthly_rent: float, growth_rate: float) -> pd.Da
 
     return pd.DataFrame(
         {
-            "Year": year,
-            "Monthly Rent": monthly,
-            "Annual Rent": annual,
-            "Total Spending": cumulative,
+            "Година": year,
+            "Месечен наем": monthly,
+            "Годишен наем": annual,
+            "Общо платено": cumulative,
         }
     )
 
@@ -75,36 +75,36 @@ def rent_growth_simple_df(rent_df: pd.DataFrame) -> pd.DataFrame:
     """
     selected_years = [0, 1, 2, 3, 5, 10, 15, 20, 30]
 
-    df = rent_df[rent_df["Year"].isin(selected_years)].copy()
+    df = rent_df[rent_df["Година"].isin(selected_years)].copy()
 
-    df["After Years"] = df["Year"].apply(
-        lambda x: "Your rent for the current year"
+    df["Период"] = df["Година"].apply(
+        lambda x: "Наемът ви за текущата година"
         if x == 0
-        else f"Your rent after {x} years"
+        else f"Наемът ви след {x} години"
     )
 
-    return df[["After Years", "Monthly Rent", "Annual Rent"]]
+    return df[["Период", "Месечен наем", "Годишен наем"]]
 
 
 def total_spending_simple_df(rent_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Таблица за Total Spending по същите години и описания като Projection.
+    Таблица за общо платено по същите години и описания като проекцията.
     """
-    # Вариант A (консистентен): "In N years..." означава общо платено за N години.
-    # Понеже rent_df["Total Spending"] е cumsum по Year (0..y включително),
-    # за хоризонт N взимаме стойността при Year=N-1.
+    # Вариант A (консистентен): "За N години..." означава общо платено за N години.
+    # Понеже rent_df["Общо платено"] е cumsum по Година (0..y включително),
+    # за хоризонт N взимаме стойността при Година=N-1.
     selected_years = [1, 2, 3, 5, 10, 15, 20, 30]
 
     rows = []
     for n_years in selected_years:
         total = int(
-            rent_df.loc[rent_df["Year"] == (n_years - 1), "Total Spending"].iloc[0]
+            rent_df.loc[rent_df["Година"] == (n_years - 1), "Общо платено"].iloc[0]
         )
         label = (
-            "In 1 year, you will have spent a total of"
+            "За 1 година ще сте платили общо"
             if n_years == 1
-            else f"In {n_years} years, you will have spent a total of"
+            else f"За {n_years} години ще сте платили общо"
         )
-        rows.append({"Spending Info": label, "Total Spending": total})
+        rows.append({"Информация": label, "Общо платено": total})
 
     return pd.DataFrame(rows)

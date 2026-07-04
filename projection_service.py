@@ -43,6 +43,6 @@ def build_projection_data(
         "summary_df": summary_df,
         "total_spending_df": total_spending_df,
         "chart_df": result_df[
-            ["Year", "Monthly Rent", "Annual Rent", "Total Spending"]
+            ["Година", "Месечен наем", "Годишен наем", "Общо платено"]
         ],
     }

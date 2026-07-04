@@ -35,17 +35,21 @@ def inject_plausible_analytics() -> None:
     )
 
 
-st.set_page_config(page_title="Monthly Rent", layout="centered")
+st.set_page_config(page_title="Месечен наем", layout="centered")
 inject_plausible_analytics()
-st.title("🏠 Explore Rent Scenarios")
+st.title("🏠 Разгледай сценарии за наем")
 
 MAX_RENT = 1_000_000
 st.session_state.setdefault("rent", "")
 
 TOTAL_RENT_INSIGHT_HORIZONS = [1, 2, 3, 5, 10, 15, 20, 30]
-TOTAL_RENT_INSIGHT_LABELS = [f"{y}Y" for y in TOTAL_RENT_INSIGHT_HORIZONS]
+TOTAL_RENT_INSIGHT_LABELS = [f"{y}г" for y in TOTAL_RENT_INSIGHT_HORIZONS]
 
-RENT_OVER_TIME_SNAPSHOT_LABELS = ["1Y", "2Y", "3Y", "5Y", "10Y", "15Y", "20Y", "30Y"]
+RENT_OVER_TIME_SNAPSHOT_LABELS = ["1г", "2г", "3г", "5г", "10г", "15г", "20г", "30г"]
+
+
+def parse_year_label(label: str) -> int:
+    return int(label.rstrip("г"))
 
 
 def fmt(n: int | float) -> str:
@@ -105,7 +109,7 @@ def spending_range_insight(
 def total_spending_for_horizon_years(projection_data: dict, n_years: int) -> int:
     chart_df = projection_data["chart_df"]
     return int(
-        chart_df.loc[chart_df["Year"] == n_years - 1, "Total Spending"].iloc[0]
+        chart_df.loc[chart_df["Година"] == n_years - 1, "Общо платено"].iloc[0]
     )
 
 
@@ -121,21 +125,21 @@ def rent_after_years_snapshot_df(
 ) -> pd.DataFrame:
     """Под месечна и годишна разлика само comparison редове от spending_ranges."""
     monthly_at_horizon = int(round(rent_value * (1 + growth_rate) ** years))
-    row_will_be = f"Your rent will be {fmt(monthly_at_horizon)} per month"
+    row_will_be = f"Наемът ви ще бъде {fmt(monthly_at_horizon)} на месец"
     pct = percent_increase_vs_today(growth_rate, years)
     factor = (1 + growth_rate) ** years - 1
     monthly_delta = int(round(rent_value * factor))
     yearly_delta = monthly_delta * 12
-    col = f"After {years} year" if years == 1 else f"After {years} years"
+    col = f"След {years} година" if years == 1 else f"След {years} години"
     pct_r2 = round(pct, 2)
     if factor >= 0:
-        row_pct = f"{pct_r2:.2f}% higher"
-        row_amt = f"+{fmt(monthly_delta)} more per month"
-        row_year = f"That adds up to +{fmt(yearly_delta)} per year"
+        row_pct = f"{pct_r2:.2f}% по-висок"
+        row_amt = f"+{fmt(monthly_delta)} повече на месец"
+        row_year = f"Това прави +{fmt(yearly_delta)} на година"
     else:
-        row_pct = f"{abs(pct_r2):.2f}% lower"
-        row_amt = f"-{fmt(abs(monthly_delta))} less per month"
-        row_year = f"That adds up to {fmt(yearly_delta)} per year"
+        row_pct = f"{abs(pct_r2):.2f}% по-нисък"
+        row_amt = f"-{fmt(abs(monthly_delta))} по-малко на месец"
+        row_year = f"Това прави {fmt(yearly_delta)} на година"
     mapping = load_spending_ranges()
     delta_abs = abs(int(monthly_delta))
     _, delta_comparison = spending_range_insight(mapping, years, delta_abs)
@@ -164,53 +168,50 @@ def render_rent_projection_summary(projection_data: dict) -> None:
     level = projection_data.get("level", projection_data.get("indicator_label", "—"))
     annual = projection_data["growth_rate"]
     rows = [
-        f"Initial Rent: {initial}",
-        f"Scenario: {scenario}",
-        f"Level: {level}",
-        f"Annual Change: {annual:.2%}",
-        "Compound change",
+        f"Начален наем: {initial}",
+        f"Сценарий: {scenario}",
+        f"Ниво: {level}",
+        f"Годишна промяна: {annual:.2%}",
+        "Сложена промяна",
     ]
-    summary = pd.DataFrame(rows, columns=["Summary"])
+    summary = pd.DataFrame(rows, columns=["Обобщение"])
     st.dataframe(summary, hide_index=True, width="stretch")
 
 
 
 def render_projection(projection_data: dict):
-    st.success(f"💰 Your monthly rent is: {fmt(projection_data['rent_value'])}")
+    st.success(f"💰 Месечният ви наем е: {fmt(projection_data['rent_value'])}")
     render_rent_projection_summary(projection_data)
-    st.subheader("🏠 Rent Over Time")
-    st.caption("👉 How your rent changes year by year")
+    st.subheader("🏠 Наемът във времето")
+    st.caption("👉 Как се променя наемът ви година след година")
     view_mode = st.radio(
-        "Projection view mode",
-        ["📋 Only Table", "📊 Only Chart"],
+        "Режим на проекцията",
+        ["📋 Само таблица", "📊 Само графика"],
         horizontal=True,
         key="projection_view_mode",
         label_visibility="collapsed",
     )
 
-    # Таблица: Your rent today and in the future
-    if view_mode == "📋 Only Table":
+    if view_mode == "📋 Само таблица":
         summary_df_display = projection_data["summary_df"].copy()
-        # Без pandas Styler (Styler генерира допълнителен HTML слой).
-        # Форматираме числата като текст за показване.
-        summary_df_display["Monthly Rent"] = summary_df_display[
-            "Monthly Rent"
+        summary_df_display["Месечен наем"] = summary_df_display[
+            "Месечен наем"
         ].apply(fmt)
-        summary_df_display["Annual Rent"] = summary_df_display[
-            "Annual Rent"
+        summary_df_display["Годишен наем"] = summary_df_display[
+            "Годишен наем"
         ].apply(fmt)
         st.dataframe(summary_df_display, width="stretch", hide_index=True)
 
-        st.caption("Pick a year to see how your rent changes")
+        st.caption("Изберете година, за да видите как се променя наемът")
         rent_snap_pick = st.segmented_control(
-            "Rent over time snapshot",
+            "Снимка на наема във времето",
             RENT_OVER_TIME_SNAPSHOT_LABELS,
             default=RENT_OVER_TIME_SNAPSHOT_LABELS[0],
             key="rent_over_time_snapshot_years",
             label_visibility="collapsed",
         )
         if rent_snap_pick:
-            y_snap = int(rent_snap_pick.rstrip("Y"))
+            y_snap = parse_year_label(rent_snap_pick)
             snap_df = rent_after_years_snapshot_df(
                 projection_data["growth_rate"],
                 float(projection_data["rent_value"]),
@@ -226,77 +227,72 @@ def render_projection(projection_data: dict):
                 hide_index=True,
             )
 
-    # Bar chart based on "Your rent today and in the future"
     summary_df = projection_data["summary_df"].copy()
     bar_labels = [
-        "current year",
-        "after 1 year",
-        "after 2 years",
-        "after 3 years",
-        "after 5 years",
-        "after 10 years",
-        "after 15 years",
-        "after 20 years",
-        "after 30 years",
+        "текуща година",
+        "след 1 година",
+        "след 2 години",
+        "след 3 години",
+        "след 5 години",
+        "след 10 години",
+        "след 15 години",
+        "след 20 години",
+        "след 30 години",
     ]
-    summary_df["Bar Label"] = bar_labels[: len(summary_df)]
-    # Подреждаме баровете по фиксирания ред на етикетите
-    summary_df["Bar Label"] = pd.Categorical(
-        summary_df["Bar Label"], categories=bar_labels, ordered=True
+    summary_df["Етикет"] = bar_labels[: len(summary_df)]
+    summary_df["Етикет"] = pd.Categorical(
+        summary_df["Етикет"], categories=bar_labels, ordered=True
     )
-    bar_df = summary_df.sort_values("Bar Label").set_index("Bar Label")[
-        ["Monthly Rent"]
+    bar_df = summary_df.sort_values("Етикет").set_index("Етикет")[
+        ["Месечен наем"]
     ]
-    if view_mode == "📊 Only Chart":
+    if view_mode == "📊 Само графика":
         st.bar_chart(bar_df)
 
-    # Още малко въздух преди Total cost
     st.markdown("")
 
-    st.subheader("💸 Total Rent Paid")
-    st.caption("👉 How much you pay in total over time")
+    st.subheader("💸 Общо платен наем")
+    st.caption("👉 Колко плащате общо във времето")
     total_view_mode = st.radio(
-        "Total view mode",
-        ["📋 Only Table", "📊 Only Chart"],
+        "Режим на общия разход",
+        ["📋 Само таблица", "📊 Само графика"],
         horizontal=True,
         key="total_view_mode",
         label_visibility="collapsed",
     )
-    # Таблица за тотал разхода
-    if total_view_mode == "📋 Only Table":
+    if total_view_mode == "📋 Само таблица":
         total_spending_display = projection_data["total_spending_df"].copy()
-        # Без pandas Styler (Styler генерира допълнителен HTML слой).
-        total_spending_display["Total Spending"] = total_spending_display[
-            "Total Spending"
+        total_spending_display["Общо платено"] = total_spending_display[
+            "Общо платено"
         ].apply(fmt)
         st.dataframe(total_spending_display, width="stretch", hide_index=True)
-    # Bar chart за тотал разхода
+
     total_labels = [
-        "In 1 year",
-        "In 2 years",
-        "In 3 years",
-        "In 5 years",
-        "In 10 years",
-        "In 15 years",
-        "In 20 years",
-        "In 30 years",
+        "За 1 година",
+        "За 2 години",
+        "За 3 години",
+        "За 5 години",
+        "За 10 години",
+        "За 15 години",
+        "За 20 години",
+        "За 30 години",
     ]
     total_df = projection_data["total_spending_df"].copy()
-    total_df["Bar Label"] = total_labels[: len(total_df)]
-    total_df["Bar Label"] = pd.Categorical(
-        total_df["Bar Label"], categories=total_labels, ordered=True
+    total_df["Етикет"] = total_labels[: len(total_df)]
+    total_df["Етикет"] = pd.Categorical(
+        total_df["Етикет"], categories=total_labels, ordered=True
     )
     total_bar_df = (
-        total_df.sort_values("Bar Label")
-        .set_index("Bar Label")[["Total Spending"]]
+        total_df.sort_values("Етикет")
+        .set_index("Етикет")[["Общо платено"]]
     )
-    if total_view_mode == "📊 Only Chart":
+    if total_view_mode == "📊 Само графика":
         st.bar_chart(total_bar_df)
 
     mapping_spending = load_spending_ranges()
-    st.caption("Pick a year to see what your rent turns into")
+    st.caption("Изберете година, за да видите в какво се превръща наемът")
     horizon_pick = st.segmented_control(
-        "Spending insight",
+        "Прозрение за разхода",
         TOTAL_RENT_INSIGHT_LABELS,
         default=TOTAL_RENT_INSIGHT_LABELS[0],
         key="total_rent_paid_insight_horizon",
@@ -304,7 +300,7 @@ def render_projection(projection_data: dict):
     )
 
     if horizon_pick:
-        y = int(horizon_pick.rstrip("Y"))
+        y = parse_year_label(horizon_pick)
         spent = total_spending_for_horizon_years(projection_data, y)
         after_line, comp_line = spending_range_insight(
             mapping_spending, y, abs(int(spent))
@@ -314,16 +310,18 @@ def render_projection(projection_data: dict):
         if comp_line:
             st.write(comp_line)
 
-    # Единствен разделител – отделя табличните блокове от обобщаващата графика
     st.divider()
 
-    st.subheader("📊 Rent Trend")
-    st.caption("👉 How rent grows over time, shown as a curve")
+    st.subheader("📊 Тенденция на наема")
+    st.caption("👉 Как расте наемът във времето, показан като крива")
     _d = chr(36)
     _legacy_projection_metrics = {
-        f"Monthly Rent ({_d})": "Monthly Rent",
-        f"Annual Rent ({_d})": "Annual Rent",
-        f"Total Spending ({_d})": "Total Rent Paid",
+        f"Monthly Rent ({_d})": "Месечен наем",
+        f"Annual Rent ({_d})": "Годишен наем",
+        f"Total Spending ({_d})": "Общо платен наем",
+        "Monthly Rent": "Месечен наем",
+        "Annual Rent": "Годишен наем",
+        "Total Rent Paid": "Общо платен наем",
     }
     _pcm = st.session_state.get("projection_chart_metric")
     if _pcm in _legacy_projection_metrics:
@@ -331,23 +329,23 @@ def render_projection(projection_data: dict):
             _pcm
         ]
     metric = st.radio(
-        "Projection metric",
-        ["Monthly Rent", "Annual Rent", "Total Rent Paid"],
+        "Метрика за проекцията",
+        ["Месечен наем", "Годишен наем", "Общо платен наем"],
         horizontal=True,
         key="projection_chart_metric",
         label_visibility="collapsed",
     )
-    chart_col = "Total Spending" if metric == "Total Rent Paid" else metric
-    chart_df = projection_data["chart_df"].set_index("Year")
+    chart_col = "Общо платено" if metric == "Общо платен наем" else metric
+    chart_df = projection_data["chart_df"].set_index("Година")
     st.line_chart(chart_df[[chart_col]])
 
 
-st.caption("Enter your monthly rent and press ▶️ Start")
+st.caption("Въведете месечния си наем и натиснете ▶️ Старт")
 
 rent_text = st.text_input(
-    "💵 Monthly rent",
+    "💵 Месечен наем",
     value=st.session_state["rent"],
-    placeholder="e.g. 1200",
+    placeholder="напр. 1200",
 )
 st.session_state["rent"] = rent_text
 
@@ -360,57 +358,57 @@ if rent_text:
         rent_value = int(clean)
 
         if rent_value < 0:
-            error = "❗ Rent must be positive"
+            error = "❗ Наемът трябва да е положителен"
         elif rent_value > MAX_RENT:
             error = (
-                "❗ Rent must be below 1,000,000. "
-                "If you're a millionaire, this app probably isn’t for you 😄"
+                "❗ Наемът трябва да е под 1 000 000. "
+                "Ако сте милионер, това приложение вероятно не е за вас 😄"
             )
     except ValueError:
-        error = "❗ Please enter a valid number"
+        error = "❗ Моля, въведете валидно число"
 
 
 scenario = st.radio(
-    "Choose scenario",
-    ["🟢 Optimistic", "🔵 Typical", "🔴 Pessimistic", "⚫ Extremes"],
+    "Изберете сценарий",
+    ["🟢 Оптимистичен", "🔵 Типичен", "🔴 Песимистичен", "⚫ Екстреми"],
     horizontal=True,
     key="adv_scenario",
 )
 
-if scenario == "🟢 Optimistic":
-    level = st.radio("Choose scenario level", ["Very Low", "Low"], horizontal=True, key="adv_level_opt")
-elif scenario == "🔵 Typical":
+if scenario == "🟢 Оптимистичен":
+    level = st.radio("Изберете ниво на сценария", ["Много ниско", "Ниско"], horizontal=True, key="adv_level_opt")
+elif scenario == "🔵 Типичен":
     level = st.radio(
-        "Choose scenario level", ["Typical", "Average"], horizontal=True, key="adv_level_typ"
+        "Изберете ниво на сценария", ["Типично", "Средно"], horizontal=True, key="adv_level_typ"
     )
-elif scenario == "🔴 Pessimistic":
+elif scenario == "🔴 Песимистичен":
     level = st.radio(
-        "Choose scenario level", ["High", "Very High"], horizontal=True, key="adv_level_pess"
+        "Изберете ниво на сценария", ["Високо", "Много високо"], horizontal=True, key="adv_level_pess"
     )
-else:  # "⚫ Extremes"
+else:  # "⚫ Екстреми"
     level = st.radio(
-        "Choose scenario level", ["Min", "Max"], horizontal=True, key="adv_level_ext"
+        "Изберете ниво на сценария", ["Мин.", "Макс."], horizontal=True, key="adv_level_ext"
     )
 
 stat_map = {
-    "Very Low": "p10",
-    "Low": "p25",
-    "Typical": "median",
-    "Average": "mean",
-    "High": "p75",
-    "Very High": "p90",
-    "Min": "min",
-    "Max": "max",
+    "Много ниско": "p10",
+    "Ниско": "p25",
+    "Типично": "median",
+    "Средно": "mean",
+    "Високо": "p75",
+    "Много високо": "p90",
+    "Мин.": "min",
+    "Макс.": "max",
 }
 
 preview_growth_rate = get_growth_rate_for_stat(stat_map[level])
-st.caption(f"Annual Change: {preview_growth_rate:.2%}")
+st.caption(f"Годишна промяна: {preview_growth_rate:.2%}")
 
-if st.button("▶️ Start", type="primary", key="advanced_start"):
+if st.button("▶️ Старт", type="primary", key="advanced_start"):
     if error:
         st.error(error)
     elif rent_value is None:
-        st.error("❗ Please enter your rent")
+        st.error("❗ Моля, въведете наема си")
     else:
         data = build_projection_data(
             selected_stat_key=stat_map[level],
