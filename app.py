@@ -37,7 +37,7 @@ def inject_plausible_analytics() -> None:
 
 st.set_page_config(page_title="Месечен наем", layout="centered")
 inject_plausible_analytics()
-st.title("🏠 Разгледай сценарии за наем")
+st.title("🏠 Сценарии за месечен наем")
 
 MAX_RENT = 1_000_000
 st.session_state.setdefault("rent", "")
@@ -172,7 +172,7 @@ def render_rent_projection_summary(projection_data: dict) -> None:
         f"Сценарий: {scenario}",
         f"Ниво: {level}",
         f"Годишна промяна: {annual:.2%}",
-        "Сложена промяна",
+        "Кумулативна промяна",
     ]
     summary = pd.DataFrame(rows, columns=["Обобщение"])
     st.dataframe(summary, hide_index=True, width="stretch")
@@ -340,7 +340,7 @@ def render_projection(projection_data: dict):
     st.line_chart(chart_df[[chart_col]])
 
 
-st.caption("Въведете месечния си наем и натиснете ▶️ Старт")
+st.caption("Въведи месечен наем и натисни ▶️ Старт")
 
 rent_text = st.text_input(
     "💵 Месечен наем",
@@ -369,7 +369,7 @@ if rent_text:
 
 
 scenario = st.radio(
-    "Изберете сценарий",
+    "Избери сценарий",
     ["🟢 Оптимистичен", "🔵 Типичен", "🔴 Песимистичен", "⚫ Екстреми"],
     horizontal=True,
     key="adv_scenario",
