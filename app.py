@@ -56,6 +56,10 @@ def fmt(n: int | float) -> str:
     return f"{n:,.0f}".replace(",", " ")
 
 
+def fmt_eur(n: int | float) -> str:
+    return f"{fmt(n)} евро"
+
+
 @st.cache_data
 def load_spending_ranges() -> pd.DataFrame:
     path = Path("data") / "spending_ranges.csv"
@@ -93,7 +97,7 @@ def spending_range_insight(
     tpl_raw = row_match.get("after_year", "")
     tpl = "" if pd.isna(tpl_raw) else str(tpl_raw).strip()
     after = (
-        tpl.replace("{years}", str(years)).replace("{amount}", fmt(spent_abs))
+        tpl.replace("{years}", str(years)).replace("{amount}", fmt_eur(spent_abs))
         if tpl
         else ""
     )
@@ -125,7 +129,8 @@ def rent_after_years_snapshot_df(
 ) -> pd.DataFrame:
     """Под месечна и годишна разлика само comparison редове от spending_ranges."""
     monthly_at_horizon = int(round(rent_value * (1 + growth_rate) ** years))
-    row_will_be = f"Наемът ви ще бъде {fmt(monthly_at_horizon)} на месец"
+    year_label = f"{years} година" if years == 1 else f"{years} години"
+    row_will_be = f"След {year_label} месечният ви наем ще бъде {fmt_eur(monthly_at_horizon)}"
     pct = percent_increase_vs_today(growth_rate, years)
     factor = (1 + growth_rate) ** years - 1
     monthly_delta = int(round(rent_value * factor))
@@ -133,13 +138,13 @@ def rent_after_years_snapshot_df(
     col = f"След {years} година" if years == 1 else f"След {years} години"
     pct_r2 = round(pct, 2)
     if factor >= 0:
-        row_pct = f"{pct_r2:.2f}% по-висок"
-        row_amt = f"+{fmt(monthly_delta)} повече на месец"
-        row_year = f"Това прави +{fmt(yearly_delta)} на година"
+        row_pct = f"С {pct_r2:.2f}% по-висок от текущия".replace(".", ",")
+        row_amt = f"С {fmt_eur(monthly_delta)} повече на месец"
+        row_year = f"Това са {fmt_eur(yearly_delta)} повече годишно"
     else:
         row_pct = f"{abs(pct_r2):.2f}% по-нисък"
-        row_amt = f"-{fmt(abs(monthly_delta))} по-малко на месец"
-        row_year = f"Това прави {fmt(yearly_delta)} на година"
+        row_amt = f"С {fmt_eur(abs(monthly_delta))} по-малко на месец"
+        row_year = f"Това са {fmt_eur(abs(yearly_delta))} по-малко годишно"
     mapping = load_spending_ranges()
     delta_abs = abs(int(monthly_delta))
     _, delta_comparison = spending_range_insight(mapping, years, delta_abs)
@@ -163,7 +168,7 @@ def rent_after_years_snapshot_df(
 
 def render_rent_projection_summary(projection_data: dict) -> None:
     """Едноколонна рекапитулация под таблицата Explanation (след Start)."""
-    initial = fmt(projection_data["rent_value"])
+    initial = fmt_eur(projection_data["rent_value"])
     scenario = projection_data.get("scenario", "—")
     level = projection_data.get("level", projection_data.get("indicator_label", "—"))
     annual = projection_data["growth_rate"]
@@ -180,10 +185,10 @@ def render_rent_projection_summary(projection_data: dict) -> None:
 
 
 def render_projection(projection_data: dict):
-    st.success(f"💰 Месечният ви наем е: {fmt(projection_data['rent_value'])}")
+    st.success(f"💰 Въведен месечен наем: {fmt_eur(projection_data['rent_value'])}")
     render_rent_projection_summary(projection_data)
     st.subheader("🏠 Наемът във времето")
-    st.caption("👉 Как се променя наемът ви година след година")
+    st.caption("👉 Проследете как се променя месечният наем във времето")
     view_mode = st.radio(
         "Режим на проекцията",
         ["📋 Само таблица", "📊 Само графика"],
@@ -196,10 +201,10 @@ def render_projection(projection_data: dict):
         summary_df_display = projection_data["summary_df"].copy()
         summary_df_display["Месечен наем"] = summary_df_display[
             "Месечен наем"
-        ].apply(fmt)
+        ].apply(fmt_eur)
         summary_df_display["Годишен наем"] = summary_df_display[
             "Годишен наем"
-        ].apply(fmt)
+        ].apply(fmt_eur)
         st.dataframe(summary_df_display, width="stretch", hide_index=True)
 
         st.caption("Изберете година, за да видите как се променя наемът")
@@ -264,8 +269,7 @@ def render_projection(projection_data: dict):
         total_spending_display = projection_data["total_spending_df"].copy()
         total_spending_display["Общо платено"] = total_spending_display[
             "Общо платено"
-        ].apply(fmt)
-        st.dataframe(total_spending_display, width="stretch", hide_index=True)
+        ].apply(fmt_eur)
 
     total_labels = [
         "За 1 година",
@@ -340,12 +344,12 @@ def render_projection(projection_data: dict):
     st.line_chart(chart_df[[chart_col]])
 
 
-st.caption("Въведи месечен наем и натисни ▶️ Старт")
+st.caption("Въведете месечен наем и натиснете ▶️ Изчисли")
 
 rent_text = st.text_input(
     "💵 Месечен наем",
     value=st.session_state["rent"],
-    placeholder="напр. 1200",
+    placeholder="напр. 1200 евро",
 )
 st.session_state["rent"] = rent_text
 
@@ -361,7 +365,7 @@ if rent_text:
             error = "❗ Наемът трябва да е положителен"
         elif rent_value > MAX_RENT:
             error = (
-                "❗ Наемът трябва да е под 1 000 000. "
+                "❗ Наемът трябва да е под 1 000 000 евро. "
                 "Ако сте милионер, това приложение вероятно не е за вас 😄"
             )
     except ValueError:
@@ -404,7 +408,7 @@ stat_map = {
 preview_growth_rate = get_growth_rate_for_stat(stat_map[level])
 st.caption(f"Годишна промяна: {preview_growth_rate:.2%}")
 
-if st.button("▶️ Старт", type="primary", key="advanced_start"):
+if st.button("▶️ Изчисли", type="primary", key="advanced_start"):
     if error:
         st.error(error)
     elif rent_value is None:
