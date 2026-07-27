@@ -270,6 +270,7 @@ def render_projection(projection_data: dict):
         total_spending_display["Общо платено"] = total_spending_display[
             "Общо платено"
         ].apply(fmt_eur)
+        st.dataframe(total_spending_display, width="stretch", hide_index=True)
 
     total_labels = [
         "За 1 година",
