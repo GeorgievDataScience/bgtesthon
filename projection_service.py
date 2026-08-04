@@ -10,7 +10,7 @@ from calculations import (
     summary_stats,
 )
 
-DATA_PATH = Path("data") / "clean_data.csv"
+DATA_PATH = Path("data") / "base2025.csv"
 
 
 
