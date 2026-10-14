@@ -13,13 +13,23 @@ def test_projection_matches_original_formula():
     assert result.yearly_rounded[5] == round(12000 * 1.04**5)
     assert result.monthly_rounded[5] == round((12000 * 1.04**5) / 12)
     assert result.monthly_table.shape == (31, 2)
+    assert list(result.monthly_table.columns) == [
+        "Месечен разход",
+        "База и натрупана промяна",
+    ]
+    assert result.yearly_table.iloc[5, 1] == (
+        "След 5 г. базата е 12 000, а натрупаната промяна е 💵2 600."
+    )
 
 
 def test_totals_match_original_sum_and_rounding():
     result = build_projection_tables(12000, 1.04)
     totals = build_totals_table([1, 2, 30], result.projected_values, 12000)
     assert totals.shape == (3, 2)
-    assert '12 000' in totals.iloc[0, 0] or '12000' in totals.iloc[0, 0]
+    assert totals.iloc[0, 1] == (
+        "За 1 година базата е 12 000, а натрупаната промяна е 💵0."
+    )
+    assert "12 000" in totals.iloc[0, 0]
 
 
 def test_statistics_levels():

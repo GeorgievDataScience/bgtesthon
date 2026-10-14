@@ -277,13 +277,13 @@ def render():
                                         key="projection_show_all_years_check",
                                     )
                                 st.caption(
-                                    "Таблицата показва как се "
+                                    "Таблиците показват как се "
                                     "променя месечният или "
                                     "годишният ви разход във "
                                     "времето според избрания "
                                     "сценарий."
                                 )
-                                key_years = [0, 1, 2, 3, 5, 10, 15, 20, 30]
+                                key_years = [0, 1, 2, 5, 10, 30]
                                 if show_all_years:
                                     monthly_shown = monthly_projection
                                     yearly_shown = yearly_projection
@@ -294,15 +294,12 @@ def render():
                                     yearly_shown = (
                                         yearly_projection.iloc[key_years]
                                     )
-                                if show_yearly:
+                                shown_projection = (
+                                    yearly_shown if show_yearly else monthly_shown
+                                )
+                                for column in shown_projection.columns:
                                     st.dataframe(
-                                        yearly_shown,
-                                        hide_index=True,
-                                        width="stretch",
-                                    )
-                                else:
-                                    st.dataframe(
-                                        monthly_shown,
+                                        shown_projection[[column]],
                                         hide_index=True,
                                         width="stretch",
                                     )
@@ -372,24 +369,30 @@ def render():
                                     periods = list(range(1, 31))
                                 else:
                                     periods = [
-                                        1, 2, 3, 5, 10, 15, 20, 30,
+                                        1, 2, 5, 10, 30,
                                     ]
                                 totals_table = build_totals_table(
                                     periods, projected_values, annual_value
                                 )
                                 st.caption(
-                                    "Таблицата показва общо "
+                                    "Таблиците показват общо "
                                     "платеното за периодите в "
                                     "редовете. Базата е същият "
                                     "разход без ръст, натрупаната "
                                     "промяна е разликата заради "
                                     "сценария."
                                 )
-                                st.dataframe(
-                                    totals_table,
-                                    hide_index=True,
-                                    width="stretch",
-                                )
+                                for column in totals_table.columns:
+                                    st.dataframe(
+                                        totals_table[[column]],
+                                        hide_index=True,
+                                        width="stretch",
+                                    )
 
-            render_history(filtered_df, percentage_values, highlighted_statistics, coicop_labels, selected_coicop, country_dropdown_labels, selected_country)
-            render_description(description_df, selected_coicop, highlighted_hierarchy)
+            show_sources = st.checkbox(
+                "Източници и методика",
+                key="show_sources_method",
+            )
+            if show_sources:
+                render_history(filtered_df, percentage_values, highlighted_statistics, coicop_labels, selected_coicop, country_dropdown_labels, selected_country)
+                render_description(description_df, selected_coicop, highlighted_hierarchy)

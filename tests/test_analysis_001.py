@@ -1,9 +1,13 @@
 """Regression checks for extracted pure calculation helpers."""
-from analyses.analysis_001.calculations import breakdown_text, projection_labels_for
+from analyses.analysis_001.calculations import change_sentence, projection_labels_for
 
-def test_breakdown():
-    assert breakdown_text(100, 25) == "100 + 💵25"
-    assert breakdown_text(100, -25) == "100 - 💵25"
+def test_change_sentence():
+    assert change_sentence("След 5 г.", 12000, 480) == (
+        "След 5 г. базата е 12 000, а натрупаната промяна е 💵480."
+    )
+    assert change_sentence("След 5 г.", 12000, -480) == (
+        "След 5 г. базата е 12 000, а натрупаната промяна е -💵480."
+    )
 
 def test_projection_labels():
     assert projection_labels_for("Месечният", [100, 105], [0, 1]) == [
