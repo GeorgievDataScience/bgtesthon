@@ -1,0 +1,5 @@
+id = "XXX"
+title = "Нов анализ"
+order = 999
+status = "development"
+visible = false

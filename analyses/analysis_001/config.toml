@@ -1,0 +1,5 @@
+id = "001"
+title = "Инфлация и разходи"
+order = 1
+status = "active"
+visible = true
