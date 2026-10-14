@@ -15,6 +15,13 @@ from shared.data_loader import (
     spending_range_row, annual_percentage_for_statistic,
 )
 
+def show_sentence_groups(frame):
+    for column in frame.columns:
+        st.subheader(column)
+        for sentence in frame[column]:
+            st.markdown(sentence)
+
+
 COICOP_GUIDE_URL = (
     "https://unstats.un.org/unsd/classifications/"
     "unsdclassifications/COICOP_2018_pre_copy_edit_publication.pdf"
@@ -277,7 +284,7 @@ def render():
                                         key="projection_show_all_years_check",
                                     )
                                 st.caption(
-                                    "Таблиците показват как се "
+                                    "Изреченията показват как се "
                                     "променя месечният или "
                                     "годишният ви разход във "
                                     "времето според избрания "
@@ -297,26 +304,25 @@ def render():
                                 shown_projection = (
                                     yearly_shown if show_yearly else monthly_shown
                                 )
-                                for column in shown_projection.columns:
-                                    st.dataframe(
-                                        shown_projection[[column]],
-                                        hide_index=True,
-                                        width="stretch",
-                                    )
+                                show_sentence_groups(shown_projection)
 
                                 comparison_years = [
-                                    1, 2, 3, 5, 10, 15, 20, 30,
+                                    1, 2, 5, 10, 30,
                                 ]
                                 comparison_labels = [
                                     f"{year} г."
                                     for year in comparison_years
                                 ]
+                                st.markdown(
+                                    "**Приблизителна стойност на "
+                                    "надбавката:**"
+                                )
                                 selected_comparison = st.segmented_control(
-                                    "Приблизителна стойност на "
-                                    "надбавката:",
+                                    "Приблизителна стойност на надбавката",
                                     options=comparison_labels,
                                     default=comparison_labels[0],
-                                    key="projection_comparison_year_v2",
+                                    key="projection_comparison_year_v3",
+                                    label_visibility="collapsed",
                                 )
                                 if selected_comparison:
                                     year = comparison_years[
@@ -375,19 +381,13 @@ def render():
                                     periods, projected_values, annual_value
                                 )
                                 st.caption(
-                                    "Таблиците показват общо "
-                                    "платеното за периодите в "
-                                    "редовете. Базата е същият "
-                                    "разход без ръст, натрупаната "
-                                    "промяна е разликата заради "
-                                    "сценария."
+                                    "Изреченията показват общо "
+                                    "платеното за периодите. "
+                                    "Базата е същият разход без "
+                                    "ръст, натрупаната промяна е "
+                                    "разликата заради сценария."
                                 )
-                                for column in totals_table.columns:
-                                    st.dataframe(
-                                        totals_table[[column]],
-                                        hide_index=True,
-                                        width="stretch",
-                                    )
+                                show_sentence_groups(totals_table)
 
             show_sources = st.checkbox(
                 "Източници и методика",
