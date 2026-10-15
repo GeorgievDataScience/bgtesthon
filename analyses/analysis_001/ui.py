@@ -105,7 +105,7 @@ def render():
             )
 
         entered_value = st.text_input(
-            "Въведете стойност",
+            "Въведете месечен разход 💵",
             placeholder="напр. 1200",
         )
         if entered_value.strip():
