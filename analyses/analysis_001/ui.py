@@ -1,6 +1,7 @@
 from .components.history import render_history
 from .components.description import render_description
 from html import escape
+import re
 from .calculations import build_projection_tables, build_totals_table
 from .scenarios import scenario_labels, scenario_levels, scenario_statistics
 from .tables import build_statistics_table, build_hierarchy_table, highlight_statistics_table
@@ -15,6 +16,19 @@ from shared.data_loader import (
     spending_range_row, annual_percentage_for_statistic,
 )
 
+_MONEY_PATTERN = re.compile(r"-?💵[\d ]+")
+
+
+def color_money(text: str) -> str:
+    safe = escape(text)
+    return _MONEY_PATTERN.sub(
+        lambda match: (
+            f'<span style="color:#15803d">{match.group(0)}</span>'
+        ),
+        safe,
+    )
+
+
 def show_expense_blocks(title, frame):
     st.subheader(title)
     parts = []
@@ -24,7 +38,7 @@ def show_expense_blocks(title, frame):
             parts.append("<br>")
         parts.append(f"<strong>{escape(heading)}</strong><br>")
         parts.extend(
-            f"&emsp;{escape(line.strip())}<br>"
+            f"&emsp;{color_money(line.strip())}<br>"
             for line in details
         )
     st.markdown("".join(parts), unsafe_allow_html=True)
@@ -344,7 +358,10 @@ def render():
                                             f"{surcharge_text} "
                                             f"{matched['comparison']}"
                                         )
-                                    st.markdown(surcharge_text)
+                                    st.markdown(
+                                        color_money(surcharge_text),
+                                        unsafe_allow_html=True,
+                                    )
 
                             else:
                                 show_all_total_years = st.checkbox(
