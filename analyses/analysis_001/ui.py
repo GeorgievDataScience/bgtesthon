@@ -239,6 +239,7 @@ def render():
                                 key="projection_section_view_v4",
                                 label_visibility="collapsed",
                             )
+                            st.divider()
                             if (
                                 projection_section
                                 == "📈 Месечен / годишен разход"

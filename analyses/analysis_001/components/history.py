@@ -17,6 +17,12 @@ def render_history(filtered_df, percentage_values, highlighted_statistics, coico
                     hide_index=True,
                     width="stretch",
                 )
+                st.caption(
+                    "Този процент е един и същ за всяка от "
+                    "следващите 30 години. Всяка година се "
+                    "умножава върху разхода от предходната "
+                    "година."
+                )
                 observation_count = len(percentage_values)
                 st.caption(
                     "Сценариите ползват Хармонизирания "
