@@ -15,11 +15,19 @@ from shared.data_loader import (
     spending_range_row, annual_percentage_for_statistic,
 )
 
-def show_sentence_groups(frame):
-    for column in frame.columns:
-        st.subheader(column)
-        for sentence in frame[column]:
-            st.markdown(sentence)
+def show_expense_blocks(title, frame):
+    st.subheader(title)
+    parts = []
+    for index, block in enumerate(frame.iloc[:, 0]):
+        heading, *details = block.split("\n")
+        if index:
+            parts.append("<br>")
+        parts.append(f"<strong>{escape(heading)}</strong><br>")
+        parts.extend(
+            f"&emsp;{escape(line.strip())}<br>"
+            for line in details
+        )
+    st.markdown("".join(parts), unsafe_allow_html=True)
 
 
 COICOP_GUIDE_URL = (
@@ -176,36 +184,6 @@ def render():
 
                 highlighted_statistics = highlight_statistics_table(statistics_df, selected_statistic)
 
-                percentage_text = (
-                    f"{selected_percentage:+.2f}".replace(".", ",")
-                )
-                summary_lines = [
-                    f"{country_dropdown_labels[selected_country]} → "
-                    f"{coicop_labels[selected_coicop]}",
-                    f"{scenario_labels[selected_scenario]} → "
-                    f"{selected_scenario_level} = {percentage_text}% "
-                    "на година",
-                ]
-                parsed_monthly = None
-                input_text = entered_value.strip()
-                if input_text:
-                    try:
-                        parsed_monthly = float(
-                            input_text.replace(" ", "").replace(",", ".")
-                        )
-                    except ValueError:
-                        parsed_monthly = None
-                if (
-                    parsed_monthly is not None
-                    and isfinite(parsed_monthly)
-                    and parsed_monthly > 0
-                ):
-                    summary_lines.append(
-                        f"💵{round(parsed_monthly)} на месец"
-                    )
-                with st.container(key="selection_summary"):
-                    st.success("\n\n".join(summary_lines))
-
                 input_text = entered_value.strip()
                 if not input_text:
                     st.info(
@@ -251,20 +229,16 @@ def render():
                             yearly_projection = projection.yearly_table
                             monthly_projection = projection.monthly_table
 
-                            projection_section = st.segmented_control(
+                            projection_section = st.radio(
                                 "Разходи във времето",
                                 options=[
                                     "📈 Месечен / годишен разход",
                                     "💰 Общ разход по периоди",
                                 ],
-                                default="📈 Месечен / годишен разход",
-                                key="projection_section_view_v3",
+                                horizontal=True,
+                                key="projection_section_view_v4",
                                 label_visibility="collapsed",
                             )
-                            if projection_section is None:
-                                projection_section = (
-                                    "📈 Месечен / годишен разход"
-                                )
                             if (
                                 projection_section
                                 == "📈 Месечен / годишен разход"
@@ -304,7 +278,12 @@ def render():
                                 shown_projection = (
                                     yearly_shown if show_yearly else monthly_shown
                                 )
-                                show_sentence_groups(shown_projection)
+                                show_expense_blocks(
+                                    "Годишният ви разход"
+                                    if show_yearly
+                                    else "Месечният ви разход",
+                                    shown_projection,
+                                )
 
                                 comparison_years = [
                                     1, 2, 5, 10, 30,
@@ -387,7 +366,10 @@ def render():
                                     "ръст, натрупаната промяна е "
                                     "разликата заради сценария."
                                 )
-                                show_sentence_groups(totals_table)
+                                show_expense_blocks(
+                                    "Общ разход по периоди",
+                                    totals_table,
+                                )
 
             show_sources = st.checkbox(
                 "Източници и методика",

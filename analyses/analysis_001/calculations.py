@@ -28,6 +28,31 @@ def projection_labels_for(
     return labels
 
 
+def expense_block(
+    year: int,
+    amount: int,
+    base_value: int,
+    change_value: int,
+) -> str:
+    money = format_amount(amount)
+    if year == 0:
+        heading = "Текущата година"
+        when = f"е 💵{money}"
+    else:
+        heading = f"След {year} г."
+        when = f"ще бъде 💵{money}"
+    if change_value >= 0:
+        change = f"💵{format_amount(change_value)}"
+    else:
+        change = f"-💵{format_amount(abs(change_value))}"
+    return "\n".join([
+        heading,
+        when,
+        f"базата е {format_amount(base_value)}",
+        f"натрупаната промяна е {change}",
+    ])
+
+
 def change_sentence(
     period_label: str,
     base_value: int,
@@ -66,24 +91,14 @@ def build_projection_tables(annual_value: float, annual_factor: float) -> Projec
     yearly_base = yearly_rounded[0]
     monthly_base = monthly_rounded[0]
     yearly_projection = pd.DataFrame({
-        "Годишен разход": projection_labels_for("Годишният", yearly_rounded, projection_years),
-        "База и натрупана промяна": [
-            change_sentence(
-                "За текущата година" if year == 0 else f"След {year} г.",
-                yearly_base,
-                value - yearly_base,
-            )
+        "Годишен разход": [
+            expense_block(year, value, yearly_base, value - yearly_base)
             for year, value in zip(projection_years, yearly_rounded)
         ],
     })
     monthly_projection = pd.DataFrame({
-        "Месечен разход": projection_labels_for("Месечният", monthly_rounded, projection_years),
-        "База и натрупана промяна": [
-            change_sentence(
-                "За текущата година" if year == 0 else f"След {year} г.",
-                monthly_base,
-                value - monthly_base,
-            )
+        "Месечен разход": [
+            expense_block(year, value, monthly_base, value - monthly_base)
             for year, value in zip(projection_years, monthly_rounded)
         ],
     })
@@ -91,16 +106,20 @@ def build_projection_tables(annual_value: float, annual_factor: float) -> Projec
 
 
 def build_totals_table(periods: list[int], projected_values: list[float], annual_value: float) -> pd.DataFrame:
-    paid_texts = []
-    change_texts = []
+    blocks = []
     for period in periods:
         total_paid = round(sum(projected_values[:period]))
         period_base = round(annual_value * period)
         period_change = total_paid - period_base
-        if period == 1:
-            paid_texts.append("За 1 година ще сте платили общо " f"💵{format_amount(total_paid)}.")
+        heading = "За 1 година" if period == 1 else f"За {period} години"
+        if period_change >= 0:
+            change = f"💵{format_amount(period_change)}"
         else:
-            paid_texts.append(f"За {period} години ще сте платили общо " f"💵{format_amount(total_paid)}.")
-        period_label = "За 1 година" if period == 1 else f"За {period} години"
-        change_texts.append(change_sentence(period_label, period_base, period_change))
-    return pd.DataFrame({"Общ разход по периоди": paid_texts, "База и натрупана промяна": change_texts})
+            change = f"-💵{format_amount(abs(period_change))}"
+        blocks.append("\n".join([
+            heading,
+            f"ще сте платили общо 💵{format_amount(total_paid)}",
+            f"базата е {format_amount(period_base)}",
+            f"натрупаната промяна е {change}",
+        ]))
+    return pd.DataFrame({"Общ разход по периоди": blocks})

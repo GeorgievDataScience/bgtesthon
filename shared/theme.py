@@ -24,9 +24,7 @@ def apply_theme():
         div[data-baseweb="popover"] *,
         input[role="combobox"],
         [data-testid="stAlert"] *,
-        [role="option"],
-        .st-key-selection_summary,
-        .st-key-selection_summary * {
+        [role="option"] {
             font-family: "Twemoji Country Flags", "Source Sans Pro", sans-serif !important;
         }
 
