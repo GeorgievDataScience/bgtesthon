@@ -370,6 +370,7 @@ def render():
                                     f"{year} г."
                                     for year in comparison_years
                                 ]
+                                st.divider()
                                 st.markdown(
                                     "**Приблизителна стойност на "
                                     "надбавката:**"
@@ -453,8 +454,9 @@ def render():
                                     totals_table,
                                 )
 
+            st.divider()
             show_sources = st.checkbox(
-                "Източници и методика",
+                "💡 Източници и методика",
                 key="show_sources_method",
             )
             if show_sources:

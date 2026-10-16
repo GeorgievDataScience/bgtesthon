@@ -2,7 +2,6 @@ import streamlit as st
 from ..charts import prepare_index_data
 
 def render_history(filtered_df, percentage_values, highlighted_statistics, coicop_labels, selected_coicop, country_dropdown_labels, selected_country):
-    chart_data, yearly_values = prepare_index_data(filtered_df)
     first_available_year = int(filtered_df["year"].min())
     last_available_year = int(filtered_df["year"].max())
 
@@ -54,48 +53,55 @@ def render_history(filtered_df, percentage_values, highlighted_statistics, coico
                 )
 
     with st.container(key="wide_index_chart_card"):
-        with st.expander(
+        index_chart = st.expander(
             "📉 Как се е движил индексът",
-            expanded=False,
-        ):
-            st.header(coicop_labels[selected_coicop])
-            st.line_chart(
-                chart_data,
-                x="year",
-                y="idx_value",
-                x_label="Година",
-                y_label="Индексна стойност",
-                height=400,
-            )
-            with st.expander(
-                "📋 Точните минали стойности",
-                expanded=False,
-            ):
-                st.dataframe(
-                    yearly_values,
-                    hide_index=True,
-                    width="stretch",
-                    column_config={
-                        "Изменение на цените (%)": (
-                            st.column_config.NumberColumn(
-                                format="%.2f"
-                            )
-                        ),
-                        "Индекс на цените": (
-                            st.column_config.NumberColumn(
-                                format="%.2f"
-                            )
-                        ),
-                    },
+            on_change="rerun",
+            key="index_chart_open",
+        )
+        if index_chart.open:
+            chart_data, yearly_values = prepare_index_data(filtered_df)
+            with index_chart:
+                st.header(coicop_labels[selected_coicop])
+                st.line_chart(
+                    chart_data,
+                    x="year",
+                    y="idx_value",
+                    x_label="Година",
+                    y_label="Индексна стойност",
+                    height=400,
                 )
-                st.caption(
-                    "Таблицата съдържа всички налични "
-                    "години за периода "
-                    f"**{first_available_year}–"
-                    f"{last_available_year} г.** и показва "
-                    "процентното изменение и стойността на "
-                    "индекса за всяка година. Възможно е "
-                    "периодът да не съдържа наблюдение за "
-                    "всяка календарна година."
+                past_values = st.expander(
+                    "📋 Точните минали стойности",
+                    on_change="rerun",
+                    key="index_past_values_open",
                 )
+                if past_values.open:
+                    with past_values:
+                        st.dataframe(
+                            yearly_values,
+                            hide_index=True,
+                            width="stretch",
+                            column_config={
+                                "Изменение на цените (%)": (
+                                    st.column_config.NumberColumn(
+                                        format="%.2f"
+                                    )
+                                ),
+                                "Индекс на цените": (
+                                    st.column_config.NumberColumn(
+                                        format="%.2f"
+                                    )
+                                ),
+                            },
+                        )
+                        st.caption(
+                            "Таблицата съдържа всички налични "
+                            "години за периода "
+                            f"**{first_available_year}–"
+                            f"{last_available_year} г.** и показва "
+                            "процентното изменение и стойността на "
+                            "индекса за всяка година. Възможно е "
+                            "периодът да не съдържа наблюдение за "
+                            "всяка календарна година."
+                        )
 
