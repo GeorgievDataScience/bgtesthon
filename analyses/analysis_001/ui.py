@@ -370,6 +370,11 @@ def render():
                                     f"{year} г."
                                     for year in comparison_years
                                 ]
+                                comparison_rounded = (
+                                    yearly_rounded
+                                    if show_yearly
+                                    else monthly_rounded
+                                )
                                 st.divider()
                                 st.markdown(
                                     "**Приблизителна стойност на "
@@ -388,11 +393,6 @@ def render():
                                             selected_comparison
                                         )
                                     ]
-                                    comparison_rounded = (
-                                        yearly_rounded
-                                        if show_yearly
-                                        else monthly_rounded
-                                    )
                                     change_value = (
                                         comparison_rounded[year]
                                         - comparison_rounded[0]
