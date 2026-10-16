@@ -50,6 +50,13 @@ def apply_theme():
             height: auto !important;
             min-height: 2.5rem;
         }
+
+        .expense-context {
+            font-family: "Twemoji Country Flags", "Segoe UI Emoji", "Source Sans Pro", sans-serif;
+            font-size: 1.05rem;
+            line-height: 1.55;
+            margin: 0.2rem 0 0.9rem 0;
+        }
         </style>
         """.replace("__FLAG_FONT_DATA__", load_flag_font())
 

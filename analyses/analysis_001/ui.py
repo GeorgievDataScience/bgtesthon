@@ -23,14 +23,46 @@ def color_money(text: str) -> str:
     safe = escape(text)
     return _MONEY_PATTERN.sub(
         lambda match: (
-            f'<span style="color:#15803d">{match.group(0)}</span>'
+            f'<span style="color:#15803d;font-weight:700">{match.group(0)}</span>'
         ),
         safe,
     )
 
 
+def category_sentence_label(details) -> str:
+    selected_icon = (
+        details.class_icon
+        if not pd.isna(details.class_icon)
+        else details.group_icon
+    )
+    icon = "" if pd.isna(selected_icon) else f"{selected_icon} "
+    return f"{icon}{details.coicop_names_bg}"
+
+
+def show_expense_heading(
+    lead,
+    country_label,
+    coicop_label,
+    scenario_label,
+    level,
+    percent_text,
+):
+    st.markdown(
+        "<div class='expense-context'>"
+        f"<strong>{escape(lead)}</strong> "
+        f"в {escape(country_label)} "
+        f"за {escape(coicop_label)} "
+        f"при {escape(level.lower())} ниво на "
+        f"{escape(scenario_label)} сценарий "
+        f"от <strong>{escape(percent_text)} %</strong> на година"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def show_expense_blocks(title, frame):
-    st.subheader(title)
+    if title:
+        st.subheader(title)
     parts = []
     for index, block in enumerate(frame.iloc[:, 0]):
         heading, *details = block.split("\n")
@@ -254,31 +286,64 @@ def render():
                                 label_visibility="collapsed",
                             )
                             st.divider()
+                            percent_text = (
+                                f"{selected_percentage:.2f}"
+                                .replace(".", ",")
+                                .rstrip("0")
+                                .rstrip(",")
+                            )
+                            sentence_country = country_dropdown_labels[
+                                selected_country
+                            ]
+                            sentence_category = category_sentence_label(
+                                selected_details
+                            )
+                            sentence_scenario = scenario_labels[
+                                selected_scenario
+                            ]
                             if (
                                 projection_section
                                 == "📈 Месечен / годишен разход"
                             ):
+                                show_yearly = bool(
+                                    st.session_state.get(
+                                        "projection_show_yearly",
+                                        False,
+                                    )
+                                )
+                                show_all_years = bool(
+                                    st.session_state.get(
+                                        "projection_show_all_years_check",
+                                        False,
+                                    )
+                                )
+                                expense_kind = (
+                                    "Годишният"
+                                    if show_yearly
+                                    else "Месечният"
+                                )
+                                show_expense_heading(
+                                    f"{expense_kind} ви разход",
+                                    sentence_country,
+                                    sentence_category,
+                                    sentence_scenario,
+                                    selected_scenario_level,
+                                    percent_text,
+                                )
                                 view_col, years_col = st.columns(
                                     [1, 1],
                                     vertical_alignment="center",
                                 )
                                 with view_col:
-                                    show_yearly = st.checkbox(
+                                    st.checkbox(
                                         "Годишен разход",
                                         key="projection_show_yearly",
                                     )
                                 with years_col:
-                                    show_all_years = st.checkbox(
+                                    st.checkbox(
                                         "Всички години",
                                         key="projection_show_all_years_check",
                                     )
-                                st.caption(
-                                    "Изреченията показват как се "
-                                    "променя месечният или "
-                                    "годишният ви разход във "
-                                    "времето според избрания "
-                                    "сценарий."
-                                )
                                 key_years = [0, 1, 2, 5, 10, 30]
                                 if show_all_years:
                                     monthly_shown = monthly_projection
@@ -294,9 +359,7 @@ def render():
                                     yearly_shown if show_yearly else monthly_shown
                                 )
                                 show_expense_blocks(
-                                    "Годишният ви разход"
-                                    if show_yearly
-                                    else "Месечният ви разход",
+                                    None,
                                     shown_projection,
                                 )
 
@@ -364,6 +427,14 @@ def render():
                                     )
 
                             else:
+                                show_expense_heading(
+                                    "Общият ви разход по периоди",
+                                    sentence_country,
+                                    sentence_category,
+                                    sentence_scenario,
+                                    selected_scenario_level,
+                                    percent_text,
+                                )
                                 show_all_total_years = st.checkbox(
                                     "Всички години",
                                     key="totals_show_all_years_check",
@@ -377,15 +448,8 @@ def render():
                                 totals_table = build_totals_table(
                                     periods, projected_values, annual_value
                                 )
-                                st.caption(
-                                    "Изреченията показват общо "
-                                    "платеното за периодите. "
-                                    "Базата е същият разход без "
-                                    "ръст, натрупаната промяна е "
-                                    "разликата заради сценария."
-                                )
                                 show_expense_blocks(
-                                    "Общ разход по периоди",
+                                    None,
                                     totals_table,
                                 )
 
