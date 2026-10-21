@@ -15,6 +15,7 @@ from shared.data_loader import (
     load_data, load_description_data, load_spending_ranges,
     spending_range_row, annual_percentage_for_statistic,
 )
+from shared.mini_bar_chart import render_mini_bar_chart
 
 _MONEY_PATTERN = re.compile(r"-?💵[\d ]+")
 
@@ -374,6 +375,18 @@ def render():
                                     yearly_rounded
                                     if show_yearly
                                     else monthly_rounded
+                                )
+                                surcharge_years = [0, *comparison_years]
+                                render_mini_bar_chart(
+                                    values=[
+                                        comparison_rounded[year]
+                                        - comparison_rounded[0]
+                                        for year in surcharge_years
+                                    ],
+                                    labels=[
+                                        "сега" if year == 0 else f"{year} г."
+                                        for year in surcharge_years
+                                    ],
                                 )
                                 st.divider()
                                 st.markdown(
