@@ -16,15 +16,30 @@ from shared.data_loader import (
     spending_range_row, annual_percentage_for_statistic,
 )
 from shared.mini_bar_chart import render_mini_bar_chart
+from idea.streamlit_donut import render_financial_donut
 
 _MONEY_PATTERN = re.compile(r"-?💵[\d ]+")
+_BASE_LABEL = "базата е"
+_CHANGE_LABEL = "натрупаната промяна е"
+_BLUE = "#1d4ed8"
+_GREEN = "#15803d"
 
 
 def color_money(text: str) -> str:
     safe = escape(text)
+    safe = safe.replace(
+        _BASE_LABEL,
+        f'<span style="color:{_BLUE}">{_BASE_LABEL}</span>',
+        1,
+    )
+    safe = safe.replace(
+        _CHANGE_LABEL,
+        f'<span style="color:{_GREEN}">{_CHANGE_LABEL}</span>',
+        1,
+    )
     return _MONEY_PATTERN.sub(
         lambda match: (
-            f'<span style="color:#15803d;font-weight:700">{match.group(0)}</span>'
+            f'<span style="color:{_GREEN};font-weight:700">{match.group(0)}</span>'
         ),
         safe,
     )
@@ -61,19 +76,24 @@ def show_expense_heading(
     )
 
 
+def expense_block_html(block: str) -> str:
+    heading, *details = block.split("\n")
+    parts = [f"<strong>{escape(heading)}</strong><br>"]
+    parts.extend(
+        f"&emsp;{color_money(line.strip())}<br>"
+        for line in details
+    )
+    return "".join(parts)
+
+
 def show_expense_blocks(title, frame):
     if title:
         st.subheader(title)
     parts = []
     for index, block in enumerate(frame.iloc[:, 0]):
-        heading, *details = block.split("\n")
         if index:
             parts.append("<br>")
-        parts.append(f"<strong>{escape(heading)}</strong><br>")
-        parts.extend(
-            f"&emsp;{color_money(line.strip())}<br>"
-            for line in details
-        )
+        parts.append(expense_block_html(block))
     st.markdown("".join(parts), unsafe_allow_html=True)
 
 
@@ -346,23 +366,37 @@ def render():
                                         key="projection_show_all_years_check",
                                     )
                                 key_years = [0, 1, 2, 5, 10, 30]
-                                if show_all_years:
-                                    monthly_shown = monthly_projection
-                                    yearly_shown = yearly_projection
-                                else:
-                                    monthly_shown = (
-                                        monthly_projection.iloc[key_years]
-                                    )
-                                    yearly_shown = (
-                                        yearly_projection.iloc[key_years]
-                                    )
-                                shown_projection = (
-                                    yearly_shown if show_yearly else monthly_shown
+                                projection_rows = (
+                                    yearly_projection
+                                    if show_yearly
+                                    else monthly_projection
                                 )
-                                show_expense_blocks(
-                                    None,
-                                    shown_projection,
+                                comparison_rounded = (
+                                    yearly_rounded
+                                    if show_yearly
+                                    else monthly_rounded
                                 )
+                                shown_years = (
+                                    list(range(31))
+                                    if show_all_years
+                                    else key_years
+                                )
+                                base_amount = comparison_rounded[0]
+                                for shown_year in shown_years:
+                                    if shown_year in key_years:
+                                        render_financial_donut(
+                                            shown_year,
+                                            base_amount,
+                                            comparison_rounded[shown_year]
+                                            - base_amount,
+                                        )
+                                    else:
+                                        st.markdown(
+                                            expense_block_html(
+                                                projection_rows.iloc[shown_year, 0]
+                                            ),
+                                            unsafe_allow_html=True,
+                                        )
 
                                 comparison_years = [
                                     1, 2, 5, 10, 30,
@@ -371,11 +405,6 @@ def render():
                                     f"{year} г."
                                     for year in comparison_years
                                 ]
-                                comparison_rounded = (
-                                    yearly_rounded
-                                    if show_yearly
-                                    else monthly_rounded
-                                )
                                 surcharge_years = [0, *comparison_years]
                                 render_mini_bar_chart(
                                     values=[
@@ -438,6 +467,11 @@ def render():
                                     st.markdown(
                                         color_money(surcharge_text),
                                         unsafe_allow_html=True,
+                                    )
+                                    render_financial_donut(
+                                        year,
+                                        comparison_rounded[0],
+                                        change_value,
                                     )
 
                             else:
