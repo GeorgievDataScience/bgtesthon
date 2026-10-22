@@ -37,7 +37,8 @@ def test_six_periods_share_one_svg():
     ])
     assert page.count("<svg ") == 1
     assert page.count("<circle ") == 12
-    assert 'viewBox="0 0 720 1080"' in page
+    assert 'viewBox="0 0 578 870"' in page
+    assert 'cx="143"' in page and 'cx="435"' in page
     assert page.count('stroke="#00BFA5"') == 5
     assert page.count('stroke="#E11D48"') == 1
     assert "-💵422" in page
