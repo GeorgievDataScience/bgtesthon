@@ -1,5 +1,7 @@
 import html
 import math
+from base64 import b64encode
+
 import streamlit as st
 
 
@@ -105,7 +107,7 @@ def _centers(count: int) -> tuple[int, int, int, int, str, list[tuple[float, flo
 
 def financial_donuts_page(periods: list[tuple[int, float, float]], kind: str = "forecast") -> str:
     """One responsive SVG. A single period stays one cell; several use two columns."""
-    _columns, _rows, width, height, max_width, centers = _centers(len(periods))
+    _columns, _rows, width, height, _max_width, centers = _centers(len(periods))
     groups = []
     labels = []
     for (year, base, change), (center_x, center_y) in zip(periods, centers):
@@ -116,29 +118,22 @@ def financial_donuts_page(periods: list[tuple[int, float, float]], kind: str = "
         )
         groups.append(donut_group(year, base, change, center_x, center_y, kind))
     label = html.escape(" ".join(labels), quote=True)
-    svg = f"""
-    <div class="donut-wrap" role="img" aria-label="{label}">
-      <svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        {''.join(groups)}
-      </svg>
-    </div>
-    """
-    return f"""<!doctype html><html lang="bg"><head><meta charset="utf-8" />
-    <style>
-      html, body {{ margin: 0; padding: 0; background: transparent; overflow: hidden; }}
-      .donut-wrap {{ width: 100%; max-width: {max_width}; margin: 0 auto; }}
-      svg {{ display: block; width: 100%; height: auto; overflow: visible; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }}
-      .heading {{ fill: #1F2937; font-size: 19px; font-weight: 700; }}
-      .subheading {{ fill: #4B5563; font-size: 14px; }}
-      .total {{ fill: #111827; font-size: 31px; font-weight: 700; }}
-      .base {{ fill: #64748B; font-size: 15px; font-weight: 650; }}
-      .change-label {{ font-size: 12px; font-weight: 650; }}
-      .change-value {{ font-size: 19px; font-weight: 700; }}
-    </style></head><body>{svg}</body></html>"""
+    return f"""<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{label}">
+      <style>
+        text {{ font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }}
+        .heading {{ fill: #1F2937; font-size: 19px; font-weight: 700; }}
+        .subheading {{ fill: #4B5563; font-size: 14px; }}
+        .total {{ fill: #111827; font-size: 31px; font-weight: 700; }}
+        .base {{ fill: #64748B; font-size: 15px; font-weight: 650; }}
+        .change-label {{ font-size: 12px; font-weight: 650; }}
+        .change-value {{ font-size: 19px; font-weight: 700; }}
+      </style>
+      {''.join(groups)}
+    </svg>"""
 
 
 def render_financial_donuts(periods: list[tuple[int, float, float]], kind: str = "forecast") -> None:
-    """Render several periods as one SVG donut sheet."""
+    """Render several periods as one SVG image that shrinks with its content."""
     cleaned = []
     for year, base, change in periods:
         base = float(base)
@@ -149,7 +144,16 @@ def render_financial_donuts(periods: list[tuple[int, float, float]], kind: str =
         cleaned.append((int(year), base, change))
     if not cleaned:
         return
-    st.iframe(financial_donuts_page(cleaned, kind), height="content")
+    svg = financial_donuts_page(cleaned, kind)
+    encoded = b64encode(svg.encode("utf-8")).decode("ascii")
+    max_width = "400px" if len(cleaned) == 1 else "100%"
+    alt = svg.split('aria-label="', 1)[1].split('"', 1)[0]
+    st.html(
+        f'<div style="width:100%;max-width:{max_width};margin:0 auto">'
+        f'<img alt="{alt}" src="data:image/svg+xml;base64,{encoded}" '
+        'style="width:100%;height:auto;display:block" />'
+        "</div>"
+    )
 
 
 def render_financial_donut(year: int, base: float, accumulated_change: float, *, height: int = 380) -> None:

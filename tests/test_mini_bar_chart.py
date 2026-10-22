@@ -45,7 +45,7 @@ def test_spread_heights_follow_hybrid_scale_and_keep_real_labels():
     html = build_mini_bar_chart_html(SPREAD, ["0", "1", "100", "1 хил.", "10 хил."], scale="auto")
     svg = _svg(html)
     assert "10 000" in svg
-    assert "Хибридна скала" in html
+    assert "Хибридна скала" not in html
     assert f"{transformed[-1]:.2f}" not in svg
 
 

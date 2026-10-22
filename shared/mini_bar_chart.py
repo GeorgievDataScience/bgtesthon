@@ -133,9 +133,7 @@ def build_mini_bar_chart_html(
         f'src="data:image/svg+xml;base64,{encoded}" '
         'style="width:100%;height:auto;display:block" />'
     )
-    if mode == "hybrid":
-        parts.append(_scale_note("Хибридна скала"))
-    elif mode == "log":
+    if mode == "log":
         parts.append(_scale_note("Логаритмична скала"))
     parts.append("</div>")
     return "".join(parts)
