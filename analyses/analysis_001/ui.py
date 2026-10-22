@@ -1,8 +1,7 @@
 from .components.history import render_history
 from .components.description import render_description
 from html import escape
-import re
-from .calculations import build_projection_tables, build_totals_table
+from .calculations import build_projection_tables, total_period_amounts
 from .scenarios import scenario_labels, scenario_levels, scenario_statistics
 from .tables import build_statistics_table, build_hierarchy_table, highlight_statistics_table
 from .charts import prepare_index_data
@@ -13,37 +12,10 @@ import streamlit as st
 from shared.data_loader import (
     DATA_PATH, DESCRIPTION_DATA_PATH, SPENDING_RANGES_PATH,
     load_data, load_description_data, load_spending_ranges,
-    spending_range_row, annual_percentage_for_statistic,
+    annual_percentage_for_statistic,
 )
 from shared.mini_bar_chart import render_mini_bar_chart
-from idea.streamlit_donut import render_financial_donut, render_financial_donuts
-
-_MONEY_PATTERN = re.compile(r"-?💵[\d ]+")
-_BASE_LABEL = "базата е"
-_CHANGE_LABEL = "натрупаната промяна е"
-_BLUE = "#1d4ed8"
-_GREEN = "#15803d"
-
-
-def color_money(text: str) -> str:
-    safe = escape(text)
-    safe = safe.replace(
-        _BASE_LABEL,
-        f'<span style="color:{_BLUE}">{_BASE_LABEL}</span>',
-        1,
-    )
-    safe = safe.replace(
-        _CHANGE_LABEL,
-        f'<span style="color:{_GREEN}">{_CHANGE_LABEL}</span>',
-        1,
-    )
-    return _MONEY_PATTERN.sub(
-        lambda match: (
-            f'<span style="color:{_GREEN};font-weight:700">{match.group(0)}</span>'
-        ),
-        safe,
-    )
-
+from idea.streamlit_donut import render_financial_donuts
 
 def category_sentence_label(details) -> str:
     selected_icon = (
@@ -76,27 +48,6 @@ def show_expense_heading(
     )
 
 
-def expense_block_html(block: str) -> str:
-    heading, *details = block.split("\n")
-    parts = [f"<strong>{escape(heading)}</strong><br>"]
-    parts.extend(
-        f"&emsp;{color_money(line.strip())}<br>"
-        for line in details
-    )
-    return "".join(parts)
-
-
-def show_expense_blocks(title, frame):
-    if title:
-        st.subheader(title)
-    parts = []
-    for index, block in enumerate(frame.iloc[:, 0]):
-        if index:
-            parts.append("<br>")
-        parts.append(expense_block_html(block))
-    st.markdown("".join(parts), unsafe_allow_html=True)
-
-
 COICOP_GUIDE_URL = (
     "https://unstats.un.org/unsd/classifications/"
     "unsdclassifications/COICOP_2018_pre_copy_edit_publication.pdf"
@@ -114,7 +65,6 @@ def render():
     context = load_context()
     df = context.df
     description_df = context.description_df
-    spending_ranges_df = context.spending_ranges_df
     coicop_details = context.coicop_details
     countries = context.countries
     country_dropdown_labels = context.country_dropdown_labels
@@ -293,8 +243,6 @@ def render():
                             projected_values = projection.projected_values
                             yearly_rounded = projection.yearly_rounded
                             monthly_rounded = projection.monthly_rounded
-                            yearly_projection = projection.yearly_table
-                            monthly_projection = projection.monthly_table
 
                             projection_section = st.radio(
                                 "Разходи във времето",
@@ -366,111 +314,31 @@ def render():
                                         key="projection_show_all_years_check",
                                     )
                                 key_years = [0, 1, 2, 5, 10, 30]
-                                projection_rows = (
-                                    yearly_projection
-                                    if show_yearly
-                                    else monthly_projection
-                                )
                                 comparison_rounded = (
                                     yearly_rounded
                                     if show_yearly
                                     else monthly_rounded
                                 )
                                 base_amount = comparison_rounded[0]
+                                donut_years = list(range(31)) if show_all_years else key_years
+                                render_mini_bar_chart(
+                                    values=[
+                                        comparison_rounded[year]
+                                        for year in key_years
+                                    ],
+                                    labels=[
+                                        "сега" if year == 0 else f"след {year} г."
+                                        for year in key_years
+                                    ],
+                                )
                                 render_financial_donuts([
                                     (
                                         shown_year,
                                         base_amount,
                                         comparison_rounded[shown_year] - base_amount,
                                     )
-                                    for shown_year in key_years
+                                    for shown_year in donut_years
                                 ])
-                                if show_all_years:
-                                    for shown_year in range(31):
-                                        if shown_year in key_years:
-                                            continue
-                                        st.markdown(
-                                            expense_block_html(
-                                                projection_rows.iloc[shown_year, 0]
-                                            ),
-                                            unsafe_allow_html=True,
-                                        )
-
-                                comparison_years = [
-                                    1, 2, 5, 10, 30,
-                                ]
-                                comparison_labels = [
-                                    f"{year} г."
-                                    for year in comparison_years
-                                ]
-                                surcharge_years = [0, *comparison_years]
-                                render_mini_bar_chart(
-                                    values=[
-                                        comparison_rounded[year]
-                                        - comparison_rounded[0]
-                                        for year in surcharge_years
-                                    ],
-                                    labels=[
-                                        "сега" if year == 0 else f"{year} г."
-                                        for year in surcharge_years
-                                    ],
-                                )
-                                st.divider()
-                                st.markdown(
-                                    "**Приблизителна стойност на "
-                                    "надбавката:**"
-                                )
-                                selected_comparison = st.segmented_control(
-                                    "Приблизителна стойност на надбавката",
-                                    options=comparison_labels,
-                                    default=comparison_labels[0],
-                                    key="projection_comparison_year_v3",
-                                    label_visibility="collapsed",
-                                )
-                                if selected_comparison:
-                                    year = comparison_years[
-                                        comparison_labels.index(
-                                            selected_comparison
-                                        )
-                                    ]
-                                    change_value = (
-                                        comparison_rounded[year]
-                                        - comparison_rounded[0]
-                                    )
-                                    matched = spending_range_row(
-                                        abs(change_value),
-                                        spending_ranges_df,
-                                    )
-                                    if change_value >= 0:
-                                        change_text = f"💵{change_value}"
-                                    else:
-                                        change_text = (
-                                            f"-💵{abs(change_value)}"
-                                        )
-                                    surcharge_kind = (
-                                        "Годишната"
-                                        if show_yearly
-                                        else "Месечната"
-                                    )
-                                    surcharge_text = (
-                                        f"{surcharge_kind} надбавка "
-                                        f"след {year} г. е "
-                                        f"{change_text}."
-                                    )
-                                    if matched is not None:
-                                        surcharge_text = (
-                                            f"{surcharge_text} "
-                                            f"{matched['comparison']}"
-                                        )
-                                    st.markdown(
-                                        color_money(surcharge_text),
-                                        unsafe_allow_html=True,
-                                    )
-                                    render_financial_donut(
-                                        year,
-                                        comparison_rounded[0],
-                                        change_value,
-                                    )
 
                             else:
                                 show_expense_heading(
@@ -485,18 +353,38 @@ def render():
                                     "Всички години",
                                     key="totals_show_all_years_check",
                                 )
-                                if show_all_total_years:
-                                    periods = list(range(1, 31))
-                                else:
-                                    periods = [
-                                        1, 2, 5, 10, 30,
-                                    ]
-                                totals_table = build_totals_table(
-                                    periods, projected_values, annual_value
+                                total_periods = [1, 2, 5, 10, 30]
+                                donut_periods = (
+                                    list(range(1, 31))
+                                    if show_all_total_years
+                                    else total_periods
                                 )
-                                show_expense_blocks(
-                                    None,
-                                    totals_table,
+                                total_amounts = {
+                                    period: total_period_amounts(
+                                        period, projected_values, annual_value
+                                    )
+                                    for period in donut_periods
+                                }
+                                render_mini_bar_chart(
+                                    values=[
+                                        total_amounts[period][0]
+                                        for period in total_periods
+                                    ],
+                                    labels=[
+                                        f"за {period} г."
+                                        for period in total_periods
+                                    ],
+                                )
+                                render_financial_donuts(
+                                    [
+                                        (
+                                            period,
+                                            total_amounts[period][1],
+                                            total_amounts[period][2],
+                                        )
+                                        for period in donut_periods
+                                    ],
+                                    kind="total",
                                 )
 
             st.divider()

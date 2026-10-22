@@ -42,3 +42,23 @@ def test_six_periods_share_one_svg():
     assert page.count('stroke="#00BFA5"') == 5
     assert page.count('stroke="#E11D48"') == 1
     assert "-💵422" in page
+
+
+def test_all_years_stay_in_one_svg():
+    periods = [(year, 2000, year) for year in range(31)]
+    page = financial_donuts_page(periods)
+    assert page.count("<svg ") == 1
+    assert page.count("<circle ") == 62
+    assert 'viewBox="0 0 578 4666"' in page
+    assert "Текущата година" in page
+    assert "След 3 г." in page
+    assert "След 30 г." in page
+
+
+def test_total_periods_use_the_paid_heading():
+    page = financial_donuts_page([(1, 12000, 0), (30, 360000, 42000)], kind="total")
+    assert page.count("<svg ") == 1
+    assert "За 1 година" in page
+    assert "За 30 години" in page
+    assert "ще сте платили" in page
+    assert "След 1 г." not in page

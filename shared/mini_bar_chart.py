@@ -9,6 +9,8 @@ _SCALES = {"auto", "linear", "log", "hybrid"}
 _COLOR = re.compile(r"^#(?:[0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$")
 _LIGHT_BAR = "#15803d"
 _DARK_BAR = "#4ade80"
+_LIGHT_GREENS = ("#86efac", "#4ade80", "#22c55e", "#16a34a", "#15803d", "#166534")
+_DARK_GREENS = ("#dcfce7", "#86efac", "#4ade80", "#22c55e", "#16a34a", "#15803d")
 _LIGHT_TEXT = "#31333F"
 _DARK_TEXT = "#FAFAFA"
 _LIGHT_ZERO = "#E5E7EB"
@@ -149,7 +151,7 @@ def _scale_note(text):
 
 def _svg(numbers, labels, fractions, height, theme, bar_color):
     count = len(numbers)
-    view_w = count * 70
+    view_w = count * _label_slot(labels)
     view_h = float(height)
     bar_top = 32.0
     bar_bottom = view_h - 36.0
@@ -167,7 +169,7 @@ def _svg(numbers, labels, fractions, height, theme, bar_color):
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {view_w:.0f} {view_h:.0f}" '
         f'width="{view_w:.0f}" height="{view_h:.0f}" '
         f'preserveAspectRatio="xMidYMid meet" class="{theme_class}">',
-        _style(bar_color),
+        _style(bar_color, count),
     ]
     if negative > 0:
         chunks.append(
@@ -187,7 +189,7 @@ def _svg(numbers, labels, fractions, height, theme, bar_color):
                 path = _rounded_end(x, baseline, bar_w, pixel, 6, top=False)
                 text_y = baseline - value_gap
             if path:
-                chunks.append(f'<path class="bar" d="{path}" />')
+                chunks.append(f'<path class="bar s{index}" d="{path}" />')
         else:
             text_y = baseline - value_gap
         number_size = _value_size(shown, slot)
@@ -203,12 +205,59 @@ def _svg(numbers, labels, fractions, height, theme, bar_color):
     return "".join(chunks)
 
 
-def _style(bar_color):
-    light = bar_color or _LIGHT_BAR
-    dark = bar_color or _DARK_BAR
+def green_shades(count, dark=False):
+    """Green fills from a light first bar to a dark last bar."""
+    ramp = _DARK_GREENS if dark else _LIGHT_GREENS
+    if count <= 1:
+        return [_DARK_BAR if dark else _LIGHT_BAR]
+    shades = []
+    for index in range(count):
+        position = index * (len(ramp) - 1) / (count - 1)
+        left = math.floor(position)
+        right = min(left + 1, len(ramp) - 1)
+        shades.append(_mix(ramp[left], ramp[right], position - left))
+    return shades
+
+
+def _mix(left, right, blend):
+    start = _hex_rgb(left)
+    end = _hex_rgb(right)
+    parts = [
+        round(start[channel] + (end[channel] - start[channel]) * blend)
+        for channel in range(3)
+    ]
+    return "#" + "".join(f"{part:02x}" for part in parts)
+
+
+def _hex_rgb(color):
+    value = color.lstrip("#")
+    return tuple(int(value[index:index + 2], 16) for index in (0, 2, 4))
+
+
+def _style(bar_color, count):
+    if bar_color:
+        light_colors = [bar_color] * count
+        dark_colors = [bar_color] * count
+    else:
+        light_colors = green_shades(count, dark=False)
+        dark_colors = green_shades(count, dark=True)
+    light_fills = "".join(
+        f".s{index}{{fill:{color}}}" for index, color in enumerate(light_colors)
+    )
+    dark_fills = "".join(
+        f".s{index}{{fill:{color}}}" for index, color in enumerate(dark_colors)
+    )
+    light_theme = "".join(
+        f"svg.theme-light .s{index}{{fill:{color}}}"
+        for index, color in enumerate(light_colors)
+    )
+    dark_theme = "".join(
+        f"svg.theme-dark .s{index}{{fill:{color}}}"
+        for index, color in enumerate(dark_colors)
+    )
     return (
         "<style>"
-        f".bar{{fill:{light}}}"
+        f"{light_fills}"
         f".num{{fill:{_LIGHT_TEXT};font-weight:700;"
         "font-family:Segoe UI,Source Sans Pro,sans-serif}}"
         ".bill{font-family:\"Segoe UI Emoji\",\"Segoe UI Symbol\",sans-serif}"
@@ -216,14 +265,14 @@ def _style(bar_color):
         "font-family:Segoe UI,Source Sans Pro,sans-serif}}"
         f".zero{{stroke:{_LIGHT_ZERO};stroke-width:1}}"
         "@media (prefers-color-scheme:dark){"
-        f".bar{{fill:{dark}}}"
+        f"{dark_fills}"
         f".num,.lbl{{fill:{_DARK_TEXT}}}"
         f".zero{{stroke:{_DARK_ZERO}}}"
         "}"
-        f"svg.theme-light .bar{{fill:{light}}}"
+        f"{light_theme}"
         f"svg.theme-light .num,svg.theme-light .lbl{{fill:{_LIGHT_TEXT}}}"
         f"svg.theme-light .zero{{stroke:{_LIGHT_ZERO}}}"
-        f"svg.theme-dark .bar{{fill:{dark}}}"
+        f"{dark_theme}"
         f"svg.theme-dark .num,svg.theme-dark .lbl{{fill:{_DARK_TEXT}}}"
         f"svg.theme-dark .zero{{stroke:{_DARK_ZERO}}}"
         "</style>"
@@ -319,7 +368,13 @@ def _value_size(text, slot):
     return size
 
 
-def _shorten(label, limit=8):
+def _label_slot(labels):
+    longest = max((len(str(label).strip()) for label in labels), default=0)
+    visible = min(longest, 10)
+    return max(70.0, visible * 13 * 0.62 + 12)
+
+
+def _shorten(label, limit=10):
     text = str(label).strip()
     if len(text) <= limit:
         return text

@@ -51,19 +51,22 @@ def _money(value: float) -> str:
     return f"-💵{amount}" if value < 0 else f"💵{amount}"
 
 
-def _titles(year: int) -> tuple[str, str]:
+def _titles(year: int, kind: str = "forecast") -> tuple[str, str]:
+    if kind == "total":
+        heading = "За 1 година" if year == 1 else f"За {year} години"
+        return heading, "ще сте платили"
     if year == 0:
         return "Текущата година", "е"
     return f"След {year} г.", "ще бъде"
 
 
-def donut_group(year: int, base: float, accumulated_change: float, center_x: float, center_y: float) -> str:
+def donut_group(year: int, base: float, accumulated_change: float, center_x: float, center_y: float, kind: str = "forecast") -> str:
     """One donut in a shared SVG. Colors stay on the elements."""
     total = base + accumulated_change
     accent, accent_text, share = donut_accent(base, accumulated_change, total)
     circumference = 2 * math.pi * _RADIUS
     segment = share * circumference
-    heading, subheading = _titles(year)
+    heading, subheading = _titles(year, kind)
     return f"""
     <g>
       <circle cx="{center_x:.0f}" cy="{center_y:.0f}" r="{_RADIUS}" fill="none" stroke="#64748B" stroke-width="{_STROKE}" />
@@ -100,18 +103,18 @@ def _centers(count: int) -> tuple[int, int, int, int, str, list[tuple[float, flo
     return columns, rows, int(width), int(height), "100%", centers
 
 
-def financial_donuts_page(periods: list[tuple[int, float, float]]) -> str:
+def financial_donuts_page(periods: list[tuple[int, float, float]], kind: str = "forecast") -> str:
     """One responsive SVG. A single period stays one cell; several use two columns."""
     _columns, _rows, width, height, max_width, centers = _centers(len(periods))
     groups = []
     labels = []
     for (year, base, change), (center_x, center_y) in zip(periods, centers):
-        heading, _subheading = _titles(year)
+        heading, _subheading = _titles(year, kind)
         total = base + change
         labels.append(
             f"{heading}: общо {_fmt(total)}, база {_fmt(base)}, натрупана промяна {_fmt(change)}"
         )
-        groups.append(donut_group(year, base, change, center_x, center_y))
+        groups.append(donut_group(year, base, change, center_x, center_y, kind))
     label = html.escape(" ".join(labels), quote=True)
     svg = f"""
     <div class="donut-wrap" role="img" aria-label="{label}">
@@ -134,7 +137,7 @@ def financial_donuts_page(periods: list[tuple[int, float, float]]) -> str:
     </style></head><body>{svg}</body></html>"""
 
 
-def render_financial_donuts(periods: list[tuple[int, float, float]]) -> None:
+def render_financial_donuts(periods: list[tuple[int, float, float]], kind: str = "forecast") -> None:
     """Render several periods as one SVG donut sheet."""
     cleaned = []
     for year, base, change in periods:
@@ -146,7 +149,7 @@ def render_financial_donuts(periods: list[tuple[int, float, float]]) -> None:
         cleaned.append((int(year), base, change))
     if not cleaned:
         return
-    st.iframe(financial_donuts_page(cleaned), height="content")
+    st.iframe(financial_donuts_page(cleaned, kind), height="content")
 
 
 def render_financial_donut(year: int, base: float, accumulated_change: float, *, height: int = 380) -> None:

@@ -92,7 +92,8 @@ def test_negatives_share_the_axis_with_positives_and_missing_values_stay_blank()
     assert svg.count("<path ") == 2
     assert ">—<" in svg or ">—</text>" in svg
     assert 'class="theme-dark"' in svg
-    assert "#4ade80" in svg
+    assert ".s0{fill:#dcfce7}" in svg
+    assert svg.rindex(".s3{fill:") > svg.index(".s0{fill:#dcfce7}")
 
 
 def test_long_labels_are_shortened_and_six_projection_amounts_are_real():
@@ -100,7 +101,7 @@ def test_long_labels_are_shortened_and_six_projection_amounts_are_real():
         [1, 2],
         ["много дълъг етикет", "б"],
     ))
-    assert "много д…" in svg
+    assert "много дъл…" in svg
     result = build_projection_tables(12000, 1.04)
     years = [0, 1, 2, 5, 10, 30]
     values = [result.monthly_rounded[year] - result.monthly_rounded[0] for year in years]
@@ -109,4 +110,10 @@ def test_long_labels_are_shortened_and_six_projection_amounts_are_real():
     assert svg.count("<text ") == 12
     assert "сега" in svg and "30 г." in svg
     assert f"{values[5]:,}".replace(",", " ") in svg
-    assert "#15803d" in svg
+    assert ".s0{fill:#86efac}" in svg
+    assert ".s5{fill:#166534}" in svg
+    titled = _svg(build_mini_bar_chart_html(
+        [1, 2],
+        ["сега", "след 30 г."],
+    ))
+    assert "след 30 г." in titled

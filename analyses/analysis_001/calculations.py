@@ -105,12 +105,19 @@ def build_projection_tables(annual_value: float, annual_factor: float) -> Projec
     return ProjectionTables(projected_values, yearly_rounded, monthly_rounded, yearly_projection, monthly_projection)
 
 
+def total_period_amounts(period: int, projected_values: list[float], annual_value: float) -> tuple[int, int, int]:
+    """Paid total, unchanged base, and accumulated change for one period."""
+    total_paid = round(sum(projected_values[:period]))
+    period_base = round(annual_value * period)
+    return total_paid, period_base, total_paid - period_base
+
+
 def build_totals_table(periods: list[int], projected_values: list[float], annual_value: float) -> pd.DataFrame:
     blocks = []
     for period in periods:
-        total_paid = round(sum(projected_values[:period]))
-        period_base = round(annual_value * period)
-        period_change = total_paid - period_base
+        total_paid, period_base, period_change = total_period_amounts(
+            period, projected_values, annual_value
+        )
         heading = "За 1 година" if period == 1 else f"За {period} години"
         if period_change >= 0:
             change = f"💵{format_amount(period_change)}"
