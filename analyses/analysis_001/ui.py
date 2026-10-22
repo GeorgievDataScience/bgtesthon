@@ -16,7 +16,7 @@ from shared.data_loader import (
     spending_range_row, annual_percentage_for_statistic,
 )
 from shared.mini_bar_chart import render_mini_bar_chart
-from idea.streamlit_donut import render_financial_donut
+from idea.streamlit_donut import render_financial_donut, render_financial_donuts
 
 _MONEY_PATTERN = re.compile(r"-?💵[\d ]+")
 _BASE_LABEL = "базата е"
@@ -376,21 +376,19 @@ def render():
                                     if show_yearly
                                     else monthly_rounded
                                 )
-                                shown_years = (
-                                    list(range(31))
-                                    if show_all_years
-                                    else key_years
-                                )
                                 base_amount = comparison_rounded[0]
-                                for shown_year in shown_years:
-                                    if shown_year in key_years:
-                                        render_financial_donut(
-                                            shown_year,
-                                            base_amount,
-                                            comparison_rounded[shown_year]
-                                            - base_amount,
-                                        )
-                                    else:
+                                render_financial_donuts([
+                                    (
+                                        shown_year,
+                                        base_amount,
+                                        comparison_rounded[shown_year] - base_amount,
+                                    )
+                                    for shown_year in key_years
+                                ])
+                                if show_all_years:
+                                    for shown_year in range(31):
+                                        if shown_year in key_years:
+                                            continue
                                         st.markdown(
                                             expense_block_html(
                                                 projection_rows.iloc[shown_year, 0]

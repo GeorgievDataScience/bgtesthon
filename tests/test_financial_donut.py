@@ -1,6 +1,6 @@
 """Accent shares for the financial donut, including a negative change."""
 
-from idea.streamlit_donut import _ROSE, _TEAL, donut_accent
+from idea.streamlit_donut import _ROSE, _TEAL, donut_accent, financial_donuts_page
 
 
 def test_positive_change_is_a_teal_share_of_the_total():
@@ -24,3 +24,20 @@ def test_negative_change_larger_than_the_base_fills_the_ring():
     color, _text, share = donut_accent(2000, -2500, -500)
     assert color == _ROSE
     assert share == 1
+
+
+def test_six_periods_share_one_svg():
+    page = financial_donuts_page([
+        (0, 2000, 0),
+        (1, 2000, 13),
+        (2, 2000, 26),
+        (5, 2000, 65),
+        (10, 2000, 132),
+        (30, 2000, -422),
+    ])
+    assert page.count("<svg ") == 1
+    assert page.count("<circle ") == 12
+    assert 'viewBox="0 0 720 1080"' in page
+    assert page.count('stroke="#00BFA5"') == 5
+    assert page.count('stroke="#E11D48"') == 1
+    assert "-💵422" in page
