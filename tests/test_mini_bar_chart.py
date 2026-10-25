@@ -101,7 +101,7 @@ def test_long_labels_are_shortened_and_six_projection_amounts_are_real():
         [1, 2],
         ["много дълъг етикет", "б"],
     ))
-    assert "много дъл…" in svg
+    assert "много дълъг…" in svg
     result = build_projection_tables(12000, 1.04)
     years = [0, 1, 2, 5, 10, 30]
     values = [result.monthly_rounded[year] - result.monthly_rounded[0] for year in years]

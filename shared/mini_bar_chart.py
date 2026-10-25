@@ -368,11 +368,11 @@ def _value_size(text, slot):
 
 def _label_slot(labels):
     longest = max((len(str(label).strip()) for label in labels), default=0)
-    visible = min(longest, 10)
+    visible = min(longest, 12)
     return max(70.0, visible * 13 * 0.62 + 12)
 
 
-def _shorten(label, limit=10):
+def _shorten(label, limit=12):
     text = str(label).strip()
     if len(text) <= limit:
         return text

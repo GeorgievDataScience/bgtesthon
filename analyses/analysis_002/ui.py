@@ -1,7 +1,7 @@
 from .components.history import render_history
 from .components.description import render_description
 from html import escape
-from .calculations import build_projection_tables, total_period_amounts
+from .calculations import build_projection_tables, total_period_amounts, year_one_amount
 from .scenarios import scenario_labels, scenario_levels, scenario_statistics
 from .tables import build_statistics_table, build_hierarchy_table, highlight_statistics_table
 from .charts import prepare_index_data
@@ -321,6 +321,51 @@ def render():
                                 )
                                 base_amount = comparison_rounded[0]
                                 donut_years = list(range(31)) if show_all_years else key_years
+                                scenario_pairs = [
+                                    (scenario, level)
+                                    for scenario, levels in scenario_levels.items()
+                                    for level in levels
+                                ]
+                                scenario_amounts = [
+                                    year_one_amount(
+                                        monthly_value,
+                                        statistic_values[
+                                            scenario_statistics[pair]
+                                        ],
+                                        show_yearly,
+                                    )
+                                    for pair in scenario_pairs
+                                ]
+                                render_mini_bar_chart(
+                                    values=scenario_amounts,
+                                    labels=[
+                                        level for _scenario, level in scenario_pairs
+                                    ],
+                                )
+                                scenario_periods = []
+                                scenario_headings = []
+                                for (_scenario, level), amount in zip(
+                                    scenario_pairs,
+                                    scenario_amounts,
+                                ):
+                                    if amount is None:
+                                        continue
+                                    scenario_periods.append(
+                                        (1, base_amount, amount - base_amount)
+                                    )
+                                    scenario_headings.append(level)
+                                render_financial_donuts(
+                                    scenario_periods,
+                                    columns=8,
+                                    headings=scenario_headings,
+                                    subheading="след 1 г.",
+                                )
+                                render_financial_donuts(
+                                    scenario_periods,
+                                    columns=4,
+                                    headings=scenario_headings,
+                                    subheading="след 1 г.",
+                                )
                                 render_mini_bar_chart(
                                     values=[
                                         comparison_rounded[year]

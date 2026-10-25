@@ -55,6 +55,59 @@ def test_all_years_stay_in_one_svg():
     assert "След 30 г." in page
 
 
+def test_eight_scenarios_fit_on_one_row():
+    headings = [
+        "Много ниско",
+        "Ниско",
+        "Типично",
+        "Средно",
+        "Високо",
+        "Много високо",
+        "Минимум",
+        "Максимум",
+    ]
+    page = financial_donuts_page(
+        [(1, 2000, amount) for amount in (-19, 9, 77, 99, 131, 273, -160, 432)],
+        columns=8,
+        headings=headings,
+        subheading="след 1 г.",
+    )
+    assert page.count("<svg ") == 1
+    assert page.count("<circle ") == 16
+    assert 'viewBox="0 0 1472 328"' in page
+    assert page.count(">натрупаната<") == 8
+    assert page.count(">промяна е<") == 8
+    assert "Много високо" in page
+
+
+def test_eight_scenarios_use_two_rows_of_four():
+    headings = [
+        "Много ниско",
+        "Ниско",
+        "Типично",
+        "Средно",
+        "Високо",
+        "Много високо",
+        "Минимум",
+        "Максимум",
+    ]
+    page = financial_donuts_page(
+        [(1, 2000, amount) for amount in (-19, 9, 77, 99, 131, 273, -160, 432)],
+        columns=4,
+        headings=headings,
+        subheading="след 1 г.",
+    )
+    assert page.count("<svg ") == 1
+    assert page.count("<circle ") == 16
+    assert 'viewBox="0 0 1150 574"' in page
+    assert "Много ниско" in page
+    assert "Много високо" in page
+    assert page.count("след 1 г.") == 8
+    assert "След 1 г." not in page
+    assert page.count('stroke="#E11D48"') == 2
+    assert page.count('stroke="#00BFA5"') == 6
+
+
 def test_total_periods_use_the_paid_heading():
     page = financial_donuts_page([(1, 12000, 0), (30, 360000, 42000)], kind="total")
     assert page.count("<svg ") == 1

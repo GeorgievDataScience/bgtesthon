@@ -1,5 +1,7 @@
 """Pure projection presentation helpers for Analysis 002."""
 
+import math
+
 from shared.data_loader import format_amount
 
 def projection_labels_for(
@@ -103,6 +105,16 @@ def build_projection_tables(annual_value: float, annual_factor: float) -> Projec
         ],
     })
     return ProjectionTables(projected_values, yearly_rounded, monthly_rounded, yearly_projection, monthly_projection)
+
+
+def year_one_amount(monthly_value: float, percentage: float, yearly: bool) -> int | None:
+    """Rounded expense after one year, using the same projection as the other charts."""
+    annual_factor = 1 + percentage / 100
+    if not math.isfinite(annual_factor) or annual_factor <= 0:
+        return None
+    tables = build_projection_tables(monthly_value * 12, annual_factor)
+    series = tables.yearly_rounded if yearly else tables.monthly_rounded
+    return series[1]
 
 
 def total_period_amounts(period: int, projected_values: list[float], annual_value: float) -> tuple[int, int, int]:
