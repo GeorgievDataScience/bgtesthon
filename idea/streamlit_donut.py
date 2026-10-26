@@ -9,6 +9,8 @@ _TEAL = "#00BFA5"
 _TEAL_TEXT = "#009688"
 _ROSE = "#E11D48"
 _ROSE_TEXT = "#BE123C"
+_BASE_RING = "#64748B"
+_ACCENT_RATIO = 1.45
 
 
 def donut_accent(base: float, change: float, total: float) -> tuple[str, str, float]:
@@ -101,6 +103,12 @@ _ROW = _Sheet(
 )
 
 
+def _ring_strokes(sheet: _Sheet) -> tuple[float, float]:
+    """Base ring and the thicker change ring on the same centerline."""
+    base_width = float(sheet.stroke)
+    return base_width, base_width * _ACCENT_RATIO
+
+
 def _fmt(value: float) -> str:
     number = abs(value)
     text = f"{number:,.0f}".replace(",", " ") if number.is_integer() else f"{number:,.2f}".replace(",", " ")
@@ -135,6 +143,7 @@ def donut_group(
     """One donut in a shared SVG. Colors stay on the elements."""
     total = base + accumulated_change
     accent, accent_text, share = donut_accent(base, accumulated_change, total)
+    base_width, accent_width = _ring_strokes(sheet)
     circumference = 2 * math.pi * sheet.radius
     segment = share * circumference
     if heading is None or subheading is None:
@@ -143,8 +152,8 @@ def donut_group(
         subheading = default_subheading if subheading is None else subheading
     return f"""
     <g>
-      <circle cx="{center_x:.0f}" cy="{center_y:.0f}" r="{sheet.radius}" fill="none" stroke="#64748B" stroke-width="{sheet.stroke}" />
-      <circle cx="{center_x:.0f}" cy="{center_y:.0f}" r="{sheet.radius}" fill="none" stroke="{accent}" stroke-width="{sheet.stroke}"
+      <circle cx="{center_x:.0f}" cy="{center_y:.0f}" r="{sheet.radius}" fill="none" stroke="{_BASE_RING}" stroke-width="{base_width:g}" />
+      <circle cx="{center_x:.0f}" cy="{center_y:.0f}" r="{sheet.radius}" fill="none" stroke="{accent}" stroke-width="{accent_width:g}"
         stroke-dasharray="{segment:.4f} {circumference:.4f}" transform="rotate(-90 {center_x:.0f} {center_y:.0f})" />
       <text x="{center_x:.0f}" y="{center_y + sheet.heading_dy:.0f}" text-anchor="middle" class="heading">{html.escape(heading)}</text>
       <text x="{center_x:.0f}" y="{center_y + sheet.sub_dy:.0f}" text-anchor="middle" class="subheading">{html.escape(subheading)}</text>
@@ -189,7 +198,8 @@ def _centers(count: int, columns: int = 2, sheet: _Sheet = _ROOMY) -> tuple[int,
     if count <= 1:
         centers = [(_CELL / 2, _CELL / 2)]
         return columns, rows, _CELL, _CELL, "400px", centers
-    outer = sheet.radius + sheet.stroke / 2
+    _base_width, accent_width = _ring_strokes(sheet)
+    outer = sheet.radius + accent_width / 2
     pitch = 2 * outer + sheet.gap
     width = 2 * sheet.margin + columns * (2 * outer) + (columns - 1) * sheet.gap
     height = 2 * sheet.margin + rows * (2 * outer) + (rows - 1) * sheet.gap

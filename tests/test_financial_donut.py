@@ -3,6 +3,13 @@
 from idea.streamlit_donut import _ROSE, _TEAL, donut_accent, financial_donuts_page
 
 
+def test_the_change_ring_is_thicker_than_the_base():
+    page = financial_donuts_page([(1, 2000, 13)])
+    assert 'stroke="#64748B" stroke-width="24"' in page
+    assert 'stroke="#00BFA5" stroke-width="34.8"' in page
+    assert page.count('r="125"') == 2
+
+
 def test_positive_change_is_a_teal_share_of_the_total():
     color, _text, share = donut_accent(2000, 13, 2013)
     assert color == _TEAL
@@ -37,8 +44,8 @@ def test_six_periods_share_one_svg():
     ])
     assert page.count("<svg ") == 1
     assert page.count("<circle ") == 12
-    assert 'viewBox="0 0 578 870"' in page
-    assert 'cx="143"' in page and 'cx="435"' in page
+    assert 'viewBox="0 0 599 902"' in page
+    assert 'cx="148"' in page and 'cx="451"' in page
     assert page.count('stroke="#00BFA5"') == 5
     assert page.count('stroke="#E11D48"') == 1
     assert "-💵422" in page
@@ -49,7 +56,7 @@ def test_all_years_stay_in_one_svg():
     page = financial_donuts_page(periods)
     assert page.count("<svg ") == 1
     assert page.count("<circle ") == 62
-    assert 'viewBox="0 0 578 4666"' in page
+    assert 'viewBox="0 0 599 4838"' in page
     assert "Текущата година" in page
     assert "След 3 г." in page
     assert "След 30 г." in page
@@ -99,7 +106,7 @@ def test_eight_scenarios_use_two_rows_of_four():
     )
     assert page.count("<svg ") == 1
     assert page.count("<circle ") == 16
-    assert 'viewBox="0 0 1150 574"' in page
+    assert 'viewBox="0 0 1182 590"' in page
     assert "Много ниско" in page
     assert "Много високо" in page
     assert page.count("след 1 г.") == 8
