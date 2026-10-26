@@ -18,18 +18,7 @@ from shared.data_loader import (
     load_data, load_description_data, load_spending_ranges,
 )
 from shared.mini_bar_chart import render_mini_bar_chart
-
-# One stable color per scenario, in scenario order: low, typical, high, then the two extremes.
-_SCENARIO_BAR_COLORS = (
-    ("#86efac", "#bbf7d0"),
-    ("#16a34a", "#4ade80"),
-    ("#94a3b8", "#e2e8f0"),
-    ("#475569", "#94a3b8"),
-    ("#fdba74", "#fed7aa"),
-    ("#ea580c", "#fb923c"),
-    ("#38bdf8", "#7dd3fc"),
-    ("#e11d48", "#fb7185"),
-)
+from shared.scenario_overview import SCENARIO_BAR_COLORS as _SCENARIO_BAR_COLORS
 
 def category_sentence_label(details) -> str:
     selected_icon = (
@@ -151,13 +140,11 @@ def render():
                     "обобщение."
                 )
             else:
-                statistic_rows, statistics_df = build_statistics_table(percentage_values)
+                statistic_rows, _ = build_statistics_table(percentage_values)
                 statistic_values = {
                     statistic: value
                     for value, statistic, _, _ in statistic_rows
                 }
-
-                highlighted_statistics = statistics_df
                 scenario_order = [
                     (scenario, level)
                     for scenario, levels in scenario_levels.items()
@@ -354,5 +341,5 @@ def render():
                 key="show_sources_method",
             )
             if show_sources:
-                render_history(filtered_df, percentage_values, highlighted_statistics, coicop_labels, selected_coicop, country_dropdown_labels, selected_country)
+                render_history(filtered_df, percentage_values, coicop_labels, selected_coicop, country_dropdown_labels, selected_country)
                 render_description(description_df, selected_coicop, highlighted_hierarchy)

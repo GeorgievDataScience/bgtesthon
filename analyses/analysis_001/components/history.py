@@ -1,7 +1,10 @@
 import streamlit as st
+from shared.index_line import render_index_line
+from shared.scenario_overview import render_scenario_overview
+
 from ..charts import prepare_index_data
 
-def render_history(filtered_df, percentage_values, highlighted_statistics, coicop_labels, selected_coicop, country_dropdown_labels, selected_country):
+def render_history(filtered_df, percentage_values, overview_rows, coicop_labels, selected_coicop, country_dropdown_labels, selected_country):
     first_available_year = int(filtered_df["year"].min())
     last_available_year = int(filtered_df["year"].max())
 
@@ -11,11 +14,7 @@ def render_history(filtered_df, percentage_values, highlighted_statistics, coico
                 "📊 Как е избран годишният процент",
                 expanded=False,
             ):
-                st.dataframe(
-                    highlighted_statistics,
-                    hide_index=True,
-                    width="stretch",
-                )
+                render_scenario_overview(overview_rows)
                 st.caption(
                     "Този процент е един и същ за всяка от "
                     "следващите 30 години. Всяка година се "
@@ -27,9 +26,10 @@ def render_history(filtered_df, percentage_values, highlighted_statistics, coico
                     "Сценариите ползват Хармонизирания "
                     "индекс на потребителските цени "
                     "(ХИПЦ). "
-                    "Оцветеният ред е годишният процент, "
-                    "който сценарият ползва за проекцията. "
-                    "Тези осем нива са сметнати от "
+                    "Осемте цветни реда са годишните "
+                    "проценти на сценариите. Проекцията "
+                    "ползва процента за избраното ниво. "
+                    "Те са сметнати от "
                     "годишните изменения на "
                     f"**{coicop_labels[selected_coicop]}** "
                     "за "
@@ -62,14 +62,7 @@ def render_history(filtered_df, percentage_values, highlighted_statistics, coico
             chart_data, yearly_values = prepare_index_data(filtered_df)
             with index_chart:
                 st.header(coicop_labels[selected_coicop])
-                st.line_chart(
-                    chart_data,
-                    x="year",
-                    y="idx_value",
-                    x_label="Година",
-                    y_label="Индексна стойност",
-                    height=400,
-                )
+                render_index_line(chart_data)
                 past_values = st.expander(
                     "📋 Точните минали стойности",
                     on_change="rerun",

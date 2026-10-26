@@ -3,7 +3,8 @@ from .components.description import render_description
 from html import escape
 from .calculations import build_projection_tables, total_period_amounts
 from .scenarios import scenario_labels, scenario_levels, scenario_statistics
-from .tables import build_statistics_table, build_hierarchy_table, highlight_statistics_table
+from .tables import build_statistics_table, build_hierarchy_table
+from shared.scenario_overview import SCENARIO_BAR_COLORS
 from .charts import prepare_index_data
 from math import isfinite
 from .components.context import load_context
@@ -187,7 +188,7 @@ def render():
                     "обобщение."
                 )
             else:
-                statistic_rows, statistics_df = build_statistics_table(percentage_values)
+                statistic_rows, _ = build_statistics_table(percentage_values)
                 selected_statistic = scenario_statistics[
                     (selected_scenario, selected_scenario_level)
                 ]
@@ -198,8 +199,24 @@ def render():
                 selected_percentage = statistic_values[
                     selected_statistic
                 ]
-
-                highlighted_statistics = highlight_statistics_table(statistics_df, selected_statistic)
+                overview_rows = []
+                for (scenario, level), (light, _dark) in zip(
+                    (
+                        (scenario, level)
+                        for scenario, levels in scenario_levels.items()
+                        for level in levels
+                    ),
+                    SCENARIO_BAR_COLORS,
+                ):
+                    statistic = scenario_statistics[(scenario, level)]
+                    change = statistic_values[statistic]
+                    overview_rows.append((
+                        f"{change:.2f}%".replace(".", ","),
+                        statistic,
+                        scenario_labels[scenario],
+                        level,
+                        light,
+                    ))
 
                 input_text = entered_value.strip()
                 if not input_text:
@@ -393,5 +410,5 @@ def render():
                 key="show_sources_method",
             )
             if show_sources:
-                render_history(filtered_df, percentage_values, highlighted_statistics, coicop_labels, selected_coicop, country_dropdown_labels, selected_country)
+                render_history(filtered_df, percentage_values, overview_rows, coicop_labels, selected_coicop, country_dropdown_labels, selected_country)
                 render_description(description_df, selected_coicop, highlighted_hierarchy)
