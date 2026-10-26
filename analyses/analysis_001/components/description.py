@@ -2,12 +2,14 @@ from html import escape
 import pandas as pd
 import streamlit as st
 
+from shared.hierarchy_place import render_hierarchy_place
+
 COICOP_GUIDE_URL = (
     "https://unstats.un.org/unsd/classifications/"
     "unsdclassifications/COICOP_2018_pre_copy_edit_publication.pdf"
 )
 
-def render_description(description_df, selected_coicop, highlighted_hierarchy):
+def render_description(description_df, selected_coicop, selected_details):
     description_match = description_df[
         description_df["coicop18"] == selected_coicop
     ]
@@ -59,11 +61,7 @@ def render_description(description_df, selected_coicop, highlighted_hierarchy):
                     st.markdown(
                         "#### 🌳 Място в класификацията"
                     )
-                    st.dataframe(
-                        highlighted_hierarchy,
-                        hide_index=True,
-                        width="stretch",
-                    )
+                    render_hierarchy_place(selected_details, selected_coicop)
 
                     st.divider()
                     st.markdown("##### 📝 Описание и обхват")

@@ -4,7 +4,6 @@ from html import escape
 from .calculations import projected_series, projected_values_for, total_period_amounts
 from .scenarios import scenario_labels, scenario_levels, scenario_statistics
 from .tables import (
-    build_hierarchy_table,
     render_scenario_overview,
     build_statistics_table,
 )
@@ -119,8 +118,6 @@ def render():
         selected_coicop = shown["coicop"]
         entered_value = shown["entered_value"]
         selected_details = coicop_details.loc[selected_coicop]
-
-        highlighted_hierarchy = build_hierarchy_table(selected_details, selected_coicop)
 
         filtered_df = df[
             (df["country"] == selected_country)
@@ -342,4 +339,4 @@ def render():
             )
             if show_sources:
                 render_history(filtered_df, percentage_values, coicop_labels, selected_coicop, country_dropdown_labels, selected_country)
-                render_description(description_df, selected_coicop, highlighted_hierarchy)
+                render_description(description_df, selected_coicop, selected_details)

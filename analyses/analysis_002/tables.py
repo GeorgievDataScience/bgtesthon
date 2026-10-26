@@ -1,6 +1,7 @@
 """Analysis 002 table construction and highlighting."""
 import pandas as pd
 
+from shared.hierarchy_place import build_hierarchy_table
 from shared.scenario_overview import (
     render_scenario_overview,
     scenario_overview_svg,
@@ -34,34 +35,3 @@ def highlight_statistics_table(statistics_df, selected_statistic):
             return [selected_style] * len(row)
         return [""] * len(row)
     return statistics_df.style.apply(highlight_selected_statistic, axis=1)
-
-
-def build_hierarchy_table(selected_details, selected_coicop):
-    def hierarchy_label(code_column, name_column):
-        code = selected_details[code_column]
-        name = selected_details[name_column]
-        if pd.isna(code) or pd.isna(name):
-            return "Няма"
-        return f"{code} — {name}"
-
-    selected_filters = pd.DataFrame({
-        "Йерархично ниво": [
-            "🌐 Дивизия:", "- > 🗂️ Група:", "- - > 📦 Клас:",
-            "- - - > 🧩 Подклас:", "- - - - > 🏷️ Детайлно ниво:",
-        ],
-        "Код и наименование": [
-            hierarchy_label("division code", "division_name_bg"),
-            hierarchy_label("group code", "group_name_bg"),
-            hierarchy_label("class code", "class_name_bg"),
-            hierarchy_label("subclass code", "subclass_name_bg"),
-            hierarchy_label("detailed level code", "detailed_level_name_bg"),
-        ],
-    })
-
-    def highlight_selected_level(row):
-        value = str(row["Код и наименование"])
-        if value.startswith(f"{selected_coicop} —"):
-            selected_style = "background-color: #d9f2d9; color: #0b3d1e; font-weight: 600;"
-            return [selected_style] * len(row)
-        return [""] * len(row)
-    return selected_filters.style.apply(highlight_selected_level, axis=1)
