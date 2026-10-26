@@ -1,9 +1,13 @@
 from .components.history import render_history
 from .components.description import render_description
 from html import escape
-from .calculations import build_projection_tables, total_period_amounts, year_one_amount
+from .calculations import projected_series, projected_values_for, total_period_amounts
 from .scenarios import scenario_labels, scenario_levels, scenario_statistics
-from .tables import build_statistics_table, build_hierarchy_table, highlight_statistics_table
+from .tables import (
+    build_hierarchy_table,
+    render_scenario_overview,
+    build_statistics_table,
+)
 from .charts import prepare_index_data
 from math import isfinite
 from .components.context import load_context
@@ -12,10 +16,20 @@ import streamlit as st
 from shared.data_loader import (
     DATA_PATH, DESCRIPTION_DATA_PATH, SPENDING_RANGES_PATH,
     load_data, load_description_data, load_spending_ranges,
-    annual_percentage_for_statistic,
 )
 from shared.mini_bar_chart import render_mini_bar_chart
-from idea.streamlit_donut import render_financial_donuts
+
+# One stable color per scenario, in scenario order: low, typical, high, then the two extremes.
+_SCENARIO_BAR_COLORS = (
+    ("#86efac", "#bbf7d0"),
+    ("#16a34a", "#4ade80"),
+    ("#94a3b8", "#e2e8f0"),
+    ("#475569", "#94a3b8"),
+    ("#fdba74", "#fed7aa"),
+    ("#ea580c", "#fb923c"),
+    ("#38bdf8", "#7dd3fc"),
+    ("#e11d48", "#fb7185"),
+)
 
 def category_sentence_label(details) -> str:
     selected_icon = (
@@ -27,22 +41,12 @@ def category_sentence_label(details) -> str:
     return f"{icon}{details.coicop_names_bg}"
 
 
-def show_expense_heading(
-    lead,
-    country_label,
-    coicop_label,
-    scenario_label,
-    level,
-    percent_text,
-):
+def show_expense_heading(lead, country_label, coicop_label):
     st.markdown(
         "<div class='expense-context'>"
         f"<strong>{escape(lead)}</strong> "
         f"в {escape(country_label)} "
-        f"за {escape(coicop_label)} "
-        f"при {escape(level.lower())} ниво на "
-        f"{escape(scenario_label)} сценарий "
-        f"от <strong>{escape(percent_text)} %</strong> на година"
+        f"за {escape(coicop_label)}"
         "</div>",
         unsafe_allow_html=True,
     )
@@ -55,7 +59,7 @@ COICOP_GUIDE_URL = (
 
 def render():
     st.caption(
-        "🌍 Изберете държава, 🛒 категория от ХИПЦ и 🎯 сценарий, "
+        "🌍 Изберете държава и 🛒 категория от ХИПЦ, "
         "след което въведете 💶 месечна стойност. След 🔎 „Покажи“ "
         "ще видите как този разход може да се промени през "
         "следващите 30 години според историческите ценови "
@@ -84,42 +88,6 @@ def render():
             options=coicop_values,
             format_func=coicop_labels.__getitem__,
         )
-
-        selected_scenario = st.radio(
-            "Изберете сценарий",
-            options=list(scenario_labels),
-            format_func=scenario_labels.__getitem__,
-            horizontal=True,
-        )
-
-        selected_scenario_level = st.radio(
-            "Изберете ниво на сценария",
-            options=scenario_levels[selected_scenario],
-            horizontal=True,
-        )
-
-        selected_statistic = scenario_statistics[
-            (selected_scenario, selected_scenario_level)
-        ]
-        preview_percentages = df.loc[
-            (df["country"] == selected_country)
-            & (df["coicop18"] == selected_coicop),
-            "percentage_change_inx",
-        ].dropna()
-        if preview_percentages.empty:
-            st.caption("Няма процент за тази комбинация.")
-        else:
-            preview_percentage = annual_percentage_for_statistic(
-                preview_percentages,
-                selected_statistic,
-            )
-            preview_percentage_text = (
-                f"{preview_percentage:.2f}".replace(".", ",")
-            )
-            st.caption(
-                "Годишна промяна: "
-                f"{preview_percentage_text}%"
-            )
 
         entered_value = st.text_input(
             "Въведете месечен разход 💵",
@@ -153,8 +121,6 @@ def render():
         st.session_state["shown_selection"] = {
             "country": selected_country,
             "coicop": selected_coicop,
-            "scenario": selected_scenario,
-            "scenario_level": selected_scenario_level,
             "entered_value": entered_value,
         }
 
@@ -162,8 +128,6 @@ def render():
     if st.session_state.get("results_visible") and shown:
         selected_country = shown["country"]
         selected_coicop = shown["coicop"]
-        selected_scenario = shown["scenario"]
-        selected_scenario_level = shown["scenario_level"]
         entered_value = shown["entered_value"]
         selected_details = coicop_details.loc[selected_coicop]
 
@@ -188,18 +152,33 @@ def render():
                 )
             else:
                 statistic_rows, statistics_df = build_statistics_table(percentage_values)
-                selected_statistic = scenario_statistics[
-                    (selected_scenario, selected_scenario_level)
-                ]
                 statistic_values = {
                     statistic: value
                     for value, statistic, _, _ in statistic_rows
                 }
-                selected_percentage = statistic_values[
-                    selected_statistic
-                ]
 
-                highlighted_statistics = highlight_statistics_table(statistics_df, selected_statistic)
+                highlighted_statistics = statistics_df
+                scenario_order = [
+                    (scenario, level)
+                    for scenario, levels in scenario_levels.items()
+                    for level in levels
+                ]
+                overview_rows = []
+                for (scenario, level), (light, _dark) in zip(
+                    scenario_order,
+                    _SCENARIO_BAR_COLORS,
+                ):
+                    statistic = scenario_statistics[(scenario, level)]
+                    change = statistic_values[statistic]
+                    change_text = f"{change:.2f}%".replace(".", ",")
+                    overview_rows.append((
+                        change_text,
+                        statistic,
+                        scenario_labels[scenario],
+                        level,
+                        light,
+                    ))
+                render_scenario_overview(overview_rows)
 
                 input_text = entered_value.strip()
                 if not input_text:
@@ -231,205 +210,119 @@ def render():
                         )
                     else:
                         annual_value = monthly_value * 12
-                        annual_factor = 1 + selected_percentage / 100
-
-                        if annual_factor <= 0:
-                            st.error(
-                                "Избраният процент не позволява "
-                                "смислено натрупване."
+                        projection_section = st.radio(
+                            "Разходи във времето",
+                            options=[
+                                "📈 Месечен / годишен разход",
+                                "💰 Общ разход по периоди",
+                            ],
+                            horizontal=True,
+                            key="projection_section_view_v4",
+                            label_visibility="collapsed",
+                        )
+                        st.divider()
+                        sentence_country = country_dropdown_labels[
+                            selected_country
+                        ]
+                        sentence_category = category_sentence_label(
+                            selected_details
+                        )
+                        if (
+                            projection_section
+                            == "📈 Месечен / годишен разход"
+                        ):
+                            show_yearly = bool(
+                                st.session_state.get(
+                                    "projection_show_yearly",
+                                    False,
+                                )
                             )
+                            expense_kind = (
+                                "Годишният"
+                                if show_yearly
+                                else "Месечният"
+                            )
+                            show_expense_heading(
+                                f"{expense_kind} ви разход",
+                                sentence_country,
+                                sentence_category,
+                            )
+                            st.checkbox(
+                                "Годишен разход",
+                                key="projection_show_yearly",
+                            )
+                            scenario_pairs = [
+                                (scenario, level)
+                                for scenario, levels in scenario_levels.items()
+                                for level in levels
+                            ]
+                            scenario_series = [
+                                projected_series(
+                                    monthly_value,
+                                    statistic_values[
+                                        scenario_statistics[pair]
+                                    ],
+                                    show_yearly,
+                                )
+                                for pair in scenario_pairs
+                            ]
+                            horizon_labels = [
+                                level for _scenario, level in scenario_pairs
+                            ]
+                            for horizon in (1, 2, 5, 10, 30):
+                                render_mini_bar_chart(
+                                    values=[
+                                        None if series is None else series[horizon]
+                                        for series in scenario_series
+                                    ],
+                                    labels=horizon_labels,
+                                    title=f"след {horizon} г.",
+                                    value_size=22,
+                                    title_size="1.6rem",
+                                    height=210,
+                                    colors=_SCENARIO_BAR_COLORS,
+                                )
+
                         else:
-                            projection = build_projection_tables(annual_value, annual_factor)
-                            projected_values = projection.projected_values
-                            yearly_rounded = projection.yearly_rounded
-                            monthly_rounded = projection.monthly_rounded
-
-                            projection_section = st.radio(
-                                "Разходи във времето",
-                                options=[
-                                    "📈 Месечен / годишен разход",
-                                    "💰 Общ разход по периоди",
-                                ],
-                                horizontal=True,
-                                key="projection_section_view_v4",
-                                label_visibility="collapsed",
+                            show_expense_heading(
+                                "Общият ви разход по периоди",
+                                sentence_country,
+                                sentence_category,
                             )
-                            st.divider()
-                            percent_text = (
-                                f"{selected_percentage:.2f}"
-                                .replace(".", ",")
-                                .rstrip("0")
-                                .rstrip(",")
-                            )
-                            sentence_country = country_dropdown_labels[
-                                selected_country
+                            total_periods = [1, 2, 5, 10, 30]
+                            total_pairs = [
+                                (scenario, level)
+                                for scenario, levels in scenario_levels.items()
+                                for level in levels
                             ]
-                            sentence_category = category_sentence_label(
-                                selected_details
-                            )
-                            sentence_scenario = scenario_labels[
-                                selected_scenario
-                            ]
-                            if (
-                                projection_section
-                                == "📈 Месечен / годишен разход"
-                            ):
-                                show_yearly = bool(
-                                    st.session_state.get(
-                                        "projection_show_yearly",
-                                        False,
-                                    )
-                                )
-                                show_all_years = bool(
-                                    st.session_state.get(
-                                        "projection_show_all_years_check",
-                                        False,
-                                    )
-                                )
-                                expense_kind = (
-                                    "Годишният"
-                                    if show_yearly
-                                    else "Месечният"
-                                )
-                                show_expense_heading(
-                                    f"{expense_kind} ви разход",
-                                    sentence_country,
-                                    sentence_category,
-                                    sentence_scenario,
-                                    selected_scenario_level,
-                                    percent_text,
-                                )
-                                view_col, years_col = st.columns(
-                                    [1, 1],
-                                    vertical_alignment="center",
-                                )
-                                with view_col:
-                                    st.checkbox(
-                                        "Годишен разход",
-                                        key="projection_show_yearly",
-                                    )
-                                with years_col:
-                                    st.checkbox(
-                                        "Всички години",
-                                        key="projection_show_all_years_check",
-                                    )
-                                key_years = [0, 1, 2, 5, 10, 30]
-                                comparison_rounded = (
-                                    yearly_rounded
-                                    if show_yearly
-                                    else monthly_rounded
-                                )
-                                base_amount = comparison_rounded[0]
-                                donut_years = list(range(31)) if show_all_years else key_years
-                                scenario_pairs = [
-                                    (scenario, level)
-                                    for scenario, levels in scenario_levels.items()
-                                    for level in levels
-                                ]
-                                scenario_amounts = [
-                                    year_one_amount(
-                                        monthly_value,
-                                        statistic_values[
-                                            scenario_statistics[pair]
-                                        ],
-                                        show_yearly,
-                                    )
-                                    for pair in scenario_pairs
-                                ]
-                                render_mini_bar_chart(
-                                    values=scenario_amounts,
-                                    labels=[
-                                        level for _scenario, level in scenario_pairs
+                            total_paths = [
+                                projected_values_for(
+                                    monthly_value,
+                                    statistic_values[
+                                        scenario_statistics[pair]
                                     ],
                                 )
-                                scenario_periods = []
-                                scenario_headings = []
-                                for (_scenario, level), amount in zip(
-                                    scenario_pairs,
-                                    scenario_amounts,
-                                ):
-                                    if amount is None:
-                                        continue
-                                    scenario_periods.append(
-                                        (1, base_amount, amount - base_amount)
-                                    )
-                                    scenario_headings.append(level)
-                                render_financial_donuts(
-                                    scenario_periods,
-                                    columns=8,
-                                    headings=scenario_headings,
-                                    subheading="след 1 г.",
-                                )
-                                render_financial_donuts(
-                                    scenario_periods,
-                                    columns=4,
-                                    headings=scenario_headings,
-                                    subheading="след 1 г.",
-                                )
+                                for pair in total_pairs
+                            ]
+                            total_labels = [
+                                level for _scenario, level in total_pairs
+                            ]
+                            for period in total_periods:
                                 render_mini_bar_chart(
                                     values=[
-                                        comparison_rounded[year]
-                                        for year in key_years
+                                        None
+                                        if path is None
+                                        else total_period_amounts(
+                                            period, path, annual_value
+                                        )[0]
+                                        for path in total_paths
                                     ],
-                                    labels=[
-                                        "сега" if year == 0 else f"след {year} г."
-                                        for year in key_years
-                                    ],
-                                )
-                                render_financial_donuts([
-                                    (
-                                        shown_year,
-                                        base_amount,
-                                        comparison_rounded[shown_year] - base_amount,
-                                    )
-                                    for shown_year in donut_years
-                                ])
-
-                            else:
-                                show_expense_heading(
-                                    "Общият ви разход по периоди",
-                                    sentence_country,
-                                    sentence_category,
-                                    sentence_scenario,
-                                    selected_scenario_level,
-                                    percent_text,
-                                )
-                                show_all_total_years = st.checkbox(
-                                    "Всички години",
-                                    key="totals_show_all_years_check",
-                                )
-                                total_periods = [1, 2, 5, 10, 30]
-                                donut_periods = (
-                                    list(range(1, 31))
-                                    if show_all_total_years
-                                    else total_periods
-                                )
-                                total_amounts = {
-                                    period: total_period_amounts(
-                                        period, projected_values, annual_value
-                                    )
-                                    for period in donut_periods
-                                }
-                                render_mini_bar_chart(
-                                    values=[
-                                        total_amounts[period][0]
-                                        for period in total_periods
-                                    ],
-                                    labels=[
-                                        f"за {period} г."
-                                        for period in total_periods
-                                    ],
-                                )
-                                render_financial_donuts(
-                                    [
-                                        (
-                                            period,
-                                            total_amounts[period][1],
-                                            total_amounts[period][2],
-                                        )
-                                        for period in donut_periods
-                                    ],
-                                    kind="total",
+                                    labels=total_labels,
+                                    title=f"за {period} г.",
+                                    value_size=22,
+                                    title_size="1.6rem",
+                                    height=210,
+                                    colors=_SCENARIO_BAR_COLORS,
                                 )
 
             st.divider()

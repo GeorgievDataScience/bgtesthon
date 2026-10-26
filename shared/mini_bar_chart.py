@@ -59,6 +59,9 @@ def render_mini_bar_chart(
     height=180,
     hybrid_threshold=100,
     auto_ratio=100,
+    value_size=15,
+    title_size=None,
+    colors=None,
 ):
     """Draw one row of vertical bars through ``st.html``.
 
@@ -85,6 +88,9 @@ def render_mini_bar_chart(
             hybrid_threshold=hybrid_threshold,
             auto_ratio=auto_ratio,
             theme=theme,
+            value_size=value_size,
+            title_size=title_size,
+            colors=colors,
         )
     )
 
@@ -99,6 +105,9 @@ def build_mini_bar_chart_html(
     hybrid_threshold=100,
     auto_ratio=100,
     theme=None,
+    value_size=15,
+    title_size=None,
+    colors=None,
 ):
     if len(values) != len(labels):
         raise ValueError("values and labels must have the same length")
@@ -110,6 +119,8 @@ def build_mini_bar_chart_html(
         raise ValueError("hybrid_threshold and auto_ratio must be positive")
     if height < 80:
         raise ValueError("height must be at least 80")
+    if value_size < 8:
+        raise ValueError("value_size must be at least 8")
 
     numbers = [_number(value) for value in values]
     fractions, mode = chart_fractions(
@@ -119,13 +130,17 @@ def build_mini_bar_chart_html(
         auto_ratio=auto_ratio,
     )
     bar_color = color if isinstance(color, str) and _COLOR.match(color) else None
-    svg = _svg(numbers, labels, fractions, height, theme, bar_color)
+    paired = _paired_colors(colors, len(numbers))
+    svg = _svg(numbers, labels, fractions, height, theme, bar_color, value_size, paired)
     encoded = b64encode(svg.encode("utf-8")).decode("ascii")
     alt = _alt_text(numbers, labels)
     parts = ['<div style="width:100%;margin:0.45rem 0 0.1rem">']
     if title:
+        title_style = "text-align:center;font-weight:700;margin:0 0 0.35rem"
+        if title_size:
+            title_style += f";font-size:{title_size}"
         parts.append(
-            '<div style="text-align:center;font-weight:600;margin:0 0 0.3rem">'
+            f'<div style="{title_style}">'
             f"{escape(str(title))}</div>"
         )
     parts.append(
@@ -147,11 +162,11 @@ def _scale_note(text):
     )
 
 
-def _svg(numbers, labels, fractions, height, theme, bar_color):
+def _svg(numbers, labels, fractions, height, theme, bar_color, value_size=15, colors=None):
     count = len(numbers)
     view_w = count * _label_slot(labels)
     view_h = float(height)
-    bar_top = 32.0
+    bar_top = max(32.0, float(value_size) + 20)
     bar_bottom = view_h - 36.0
     label_y = view_h - 10.0
     value_gap = 16.0
@@ -167,7 +182,7 @@ def _svg(numbers, labels, fractions, height, theme, bar_color):
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {view_w:.0f} {view_h:.0f}" '
         f'width="{view_w:.0f}" height="{view_h:.0f}" '
         f'preserveAspectRatio="xMidYMid meet" class="{theme_class}">',
-        _style(bar_color, count),
+        _style(bar_color, count, colors),
     ]
     if negative > 0:
         chunks.append(
@@ -190,7 +205,7 @@ def _svg(numbers, labels, fractions, height, theme, bar_color):
                 chunks.append(f'<path class="bar s{index}" d="{path}" />')
         else:
             text_y = baseline - value_gap
-        number_size = _value_size(shown, slot)
+        number_size = _value_size(shown, slot, value_size)
         chunks.append(
             f'<text class="num" x="{center:.2f}" y="{text_y:.2f}" text-anchor="middle" '
             f'font-size="{number_size}">{_money_label(shown, number_size)}</text>'
@@ -232,8 +247,28 @@ def _hex_rgb(color):
     return tuple(int(value[index:index + 2], 16) for index in (0, 2, 4))
 
 
-def _style(bar_color, count):
-    if bar_color:
+def _paired_colors(colors, count):
+    if colors is None:
+        return None
+    if len(colors) != count:
+        raise ValueError("colors must match the number of bars")
+    paired = []
+    for item in colors:
+        if isinstance(item, str):
+            light = dark = item
+        else:
+            light, dark = item
+        if not (_COLOR.match(light) and _COLOR.match(dark)):
+            raise ValueError("colors must be hex colors")
+        paired.append((light, dark))
+    return paired
+
+
+def _style(bar_color, count, colors=None):
+    if colors:
+        light_colors = [light for light, _dark in colors]
+        dark_colors = [dark for _light, dark in colors]
+    elif bar_color:
         light_colors = [bar_color] * count
         dark_colors = [bar_color] * count
     else:
@@ -358,9 +393,9 @@ def _format_value(value):
     return f"💵{amount}"
 
 
-def _value_size(text, slot):
+def _value_size(text, slot, preferred=15):
     width = sum(2 if char == "💵" else 1 for char in text)
-    size = 15
+    size = preferred
     while size > 8 and width * size * 0.58 > slot * 0.94:
         size -= 1
     return size

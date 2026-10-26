@@ -107,13 +107,28 @@ def build_projection_tables(annual_value: float, annual_factor: float) -> Projec
     return ProjectionTables(projected_values, yearly_rounded, monthly_rounded, yearly_projection, monthly_projection)
 
 
-def year_one_amount(monthly_value: float, percentage: float, yearly: bool) -> int | None:
-    """Rounded expense after one year, using the same projection as the other charts."""
+def projected_values_for(monthly_value: float, percentage: float) -> list[float] | None:
+    """Unrounded yearly path for years 0–30, using the shared projection."""
+    annual_factor = 1 + percentage / 100
+    if not math.isfinite(annual_factor) or annual_factor <= 0:
+        return None
+    return build_projection_tables(monthly_value * 12, annual_factor).projected_values
+
+
+def projected_series(monthly_value: float, percentage: float, yearly: bool) -> list[int] | None:
+    """Rounded monthly or yearly expense for years 0–30, using the shared projection."""
     annual_factor = 1 + percentage / 100
     if not math.isfinite(annual_factor) or annual_factor <= 0:
         return None
     tables = build_projection_tables(monthly_value * 12, annual_factor)
-    series = tables.yearly_rounded if yearly else tables.monthly_rounded
+    return tables.yearly_rounded if yearly else tables.monthly_rounded
+
+
+def year_one_amount(monthly_value: float, percentage: float, yearly: bool) -> int | None:
+    """Rounded expense after one year, using the same projection as the other charts."""
+    series = projected_series(monthly_value, percentage, yearly)
+    if series is None:
+        return None
     return series[1]
 
 

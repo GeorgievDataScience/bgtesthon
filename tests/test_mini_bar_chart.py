@@ -117,3 +117,41 @@ def test_long_labels_are_shortened_and_six_projection_amounts_are_real():
         ["сега", "след 30 г."],
     ))
     assert "след 30 г." in titled
+
+
+def test_scenario_bars_keep_a_color_for_each_pair():
+    colors = (
+        ("#86efac", "#bbf7d0"),
+        ("#16a34a", "#4ade80"),
+        ("#94a3b8", "#e2e8f0"),
+        ("#475569", "#94a3b8"),
+        ("#fdba74", "#fed7aa"),
+        ("#ea580c", "#fb923c"),
+        ("#38bdf8", "#7dd3fc"),
+        ("#e11d48", "#fb7185"),
+    )
+    svg = _svg(build_mini_bar_chart_html(
+        [1, 2, 3, 4, 5, 6, 7, 8],
+        ["а", "б", "в", "г", "д", "е", "ж", "з"],
+        colors=colors,
+    ))
+    assert ".s0{fill:#86efac}" in svg
+    assert ".s1{fill:#16a34a}" in svg
+    assert ".s6{fill:#38bdf8}" in svg
+    assert ".s7{fill:#e11d48}" in svg
+    assert "svg.theme-dark .s0{fill:#bbf7d0}" in svg
+    assert "svg.theme-dark .s7{fill:#fb7185}" in svg
+
+
+def test_horizon_charts_can_use_larger_money_and_title():
+    html = build_mini_bar_chart_html(
+        [1981, 2432],
+        ["Много ниско", "Максимум"],
+        title="след 1 г.",
+        value_size=22,
+        title_size="1.6rem",
+    )
+    assert "font-size:1.6rem" in html
+    assert 'font-size="22"' in _svg(html)
+    plain = _svg(build_mini_bar_chart_html([1981], ["сега"]))
+    assert 'font-size="15"' in plain
