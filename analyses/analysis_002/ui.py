@@ -45,8 +45,8 @@ def show_expense_heading(lead, country_label, coicop_label):
     st.markdown(
         "<div class='expense-context'>"
         f"<strong>{escape(lead)}</strong> "
-        f"в {escape(country_label)} "
-        f"за {escape(coicop_label)}"
+        f"за {escape(coicop_label)} "
+        f"в {escape(country_label)}"
         "</div>",
         unsafe_allow_html=True,
     )
@@ -237,20 +237,30 @@ def render():
                                     False,
                                 )
                             )
-                            expense_kind = (
-                                "Годишният"
+                            expense_lead = (
+                                "Колко ще плащате на година"
                                 if show_yearly
-                                else "Месечният"
+                                else "Колко ще плащате на месец"
                             )
                             show_expense_heading(
-                                f"{expense_kind} ви разход",
+                                expense_lead,
                                 sentence_country,
                                 sentence_category,
                             )
-                            st.checkbox(
-                                "Годишен разход",
-                                key="projection_show_yearly",
+                            yearly_col, all_years_col = st.columns(
+                                [1, 1],
+                                vertical_alignment="center",
                             )
+                            with yearly_col:
+                                st.checkbox(
+                                    "Годишен разход",
+                                    key="projection_show_yearly",
+                                )
+                            with all_years_col:
+                                show_all_years = st.checkbox(
+                                    "Всички години",
+                                    key="analysis_002_show_all_years",
+                                )
                             scenario_pairs = [
                                 (scenario, level)
                                 for scenario, levels in scenario_levels.items()
@@ -269,7 +279,12 @@ def render():
                             horizon_labels = [
                                 level for _scenario, level in scenario_pairs
                             ]
-                            for horizon in (1, 2, 5, 10, 30):
+                            horizons = (
+                                range(1, 31)
+                                if show_all_years
+                                else (1, 2, 5, 10, 30)
+                            )
+                            for horizon in horizons:
                                 render_mini_bar_chart(
                                     values=[
                                         None if series is None else series[horizon]
@@ -285,11 +300,19 @@ def render():
 
                         else:
                             show_expense_heading(
-                                "Общият ви разход по периоди",
+                                "Колко ще сте платили общо",
                                 sentence_country,
                                 sentence_category,
                             )
-                            total_periods = [1, 2, 5, 10, 30]
+                            show_all_periods = st.checkbox(
+                                "Всички години",
+                                key="analysis_002_show_all_periods",
+                            )
+                            total_periods = (
+                                range(1, 31)
+                                if show_all_periods
+                                else (1, 2, 5, 10, 30)
+                            )
                             total_pairs = [
                                 (scenario, level)
                                 for scenario, levels in scenario_levels.items()
