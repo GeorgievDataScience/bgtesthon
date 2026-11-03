@@ -11,6 +11,10 @@ _LIGHT_BAR = "#15803d"
 _DARK_BAR = "#4ade80"
 _LIGHT_GREENS = ("#86efac", "#4ade80", "#22c55e", "#16a34a", "#15803d", "#166534")
 _DARK_GREENS = ("#dcfce7", "#86efac", "#4ade80", "#22c55e", "#16a34a", "#15803d")
+_LIGHT_BLUES = ("#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8")
+_DARK_BLUES = ("#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb")
+_LIGHT_BLUE = "#2563eb"
+_DARK_BLUE = "#60a5fa"
 _LIGHT_TEXT = "#31333F"
 _DARK_TEXT = "#FAFAFA"
 _LIGHT_ZERO = "#E5E7EB"
@@ -220,9 +224,21 @@ def _svg(numbers, labels, fractions, height, theme, bar_color, value_size=15, co
 
 def green_shades(count, dark=False):
     """Green fills from a light first bar to a dark last bar."""
-    ramp = _DARK_GREENS if dark else _LIGHT_GREENS
+    if dark:
+        return _shades(_DARK_GREENS, count, _DARK_BAR)
+    return _shades(_LIGHT_GREENS, count, _LIGHT_BAR)
+
+
+def blue_shades(count, dark=False):
+    """Blue fills from a light first bar to a dark last bar."""
+    if dark:
+        return _shades(_DARK_BLUES, count, _DARK_BLUE)
+    return _shades(_LIGHT_BLUES, count, _LIGHT_BLUE)
+
+
+def _shades(ramp, count, single):
     if count <= 1:
-        return [_DARK_BAR if dark else _LIGHT_BAR]
+        return [single]
     shades = []
     for index in range(count):
         position = index * (len(ramp) - 1) / (count - 1)

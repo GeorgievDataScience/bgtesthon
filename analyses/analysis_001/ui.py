@@ -15,7 +15,7 @@ from shared.data_loader import (
     load_data, load_description_data, load_spending_ranges,
     annual_percentage_for_statistic,
 )
-from shared.mini_bar_chart import render_mini_bar_chart
+from shared.mini_bar_chart import blue_shades, render_mini_bar_chart
 from idea.streamlit_donut import render_financial_donuts
 
 def category_sentence_label(details) -> str:
@@ -389,6 +389,10 @@ def render():
                                         f"за {period} г."
                                         for period in total_periods
                                     ],
+                                    colors=list(zip(
+                                        blue_shades(len(total_periods)),
+                                        blue_shades(len(total_periods), dark=True),
+                                    )),
                                 )
                                 render_financial_donuts(
                                     [

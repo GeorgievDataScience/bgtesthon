@@ -122,3 +122,12 @@ def test_total_periods_use_the_paid_heading():
     assert "За 30 години" in page
     assert "ще сте платили" in page
     assert "След 1 г." not in page
+    assert 'stroke="#2563eb"' in page
+    assert 'fill="#1d4ed8"' in page
+    assert 'stroke="#00BFA5"' not in page
+
+
+def test_a_fall_in_the_paid_total_stays_rose():
+    color, text, _share = donut_accent(24000, -500, 23500, "total")
+    assert color == _ROSE
+    assert text != "#1d4ed8"

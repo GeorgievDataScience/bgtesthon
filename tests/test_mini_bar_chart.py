@@ -5,8 +5,10 @@ from base64 import b64decode
 
 from analyses.analysis_001.calculations import build_projection_tables
 from shared.mini_bar_chart import (
+    blue_shades,
     build_mini_bar_chart_html,
     chart_fractions,
+    green_shades,
     hybrid_scale,
 )
 
@@ -155,3 +157,22 @@ def test_horizon_charts_can_use_larger_money_and_title():
     assert 'font-size="22"' in _svg(html)
     plain = _svg(build_mini_bar_chart_html([1981], ["сега"]))
     assert 'font-size="15"' in plain
+
+
+def test_the_total_bars_use_a_blue_ramp_and_the_default_stays_green():
+    blues = blue_shades(5)
+    assert blues[0] == "#bfdbfe"
+    assert blues[-1] == "#1d4ed8"
+    assert blue_shades(5, dark=True)[0] == "#dbeafe"
+    assert blue_shades(5, dark=True)[-1] == "#2563eb"
+    assert green_shades(6)[0] == "#86efac"
+    html = build_mini_bar_chart_html(
+        [1, 2, 5, 10, 30],
+        ["за 1 г.", "за 2 г.", "за 5 г.", "за 10 г.", "за 30 г."],
+        colors=list(zip(blues, blue_shades(5, dark=True))),
+    )
+    svg = _svg(html)
+    assert ".s0{fill:#bfdbfe}" in svg
+    assert ".s4{fill:#1d4ed8}" in svg
+    assert "#86efac" not in svg
+    assert ".s0{fill:#86efac}" in _svg(build_mini_bar_chart_html([1, 2], ["сега", "след 1 г."]))

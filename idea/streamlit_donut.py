@@ -7,21 +7,25 @@ import streamlit as st
 
 _TEAL = "#00BFA5"
 _TEAL_TEXT = "#009688"
+_BLUE = "#2563eb"
+_BLUE_TEXT = "#1d4ed8"
 _ROSE = "#E11D48"
 _ROSE_TEXT = "#BE123C"
 _BASE_RING = "#64748B"
 _ACCENT_RATIO = 1.45
 
 
-def donut_accent(base: float, change: float, total: float) -> tuple[str, str, float]:
+def donut_accent(base: float, change: float, total: float, kind: str = "forecast") -> tuple[str, str, float]:
     """Return the accent stroke, text color, and share of the ring.
 
     A positive change is a share of the total. A negative change is a share of
-    the starting base, capped at the whole ring.
+    the starting base, capped at the whole ring. The paid-total ring uses blue
+    for a rise; the monthly ring stays teal. A fall stays rose in both.
     """
+    rise, rise_text = (_BLUE, _BLUE_TEXT) if kind == "total" else (_TEAL, _TEAL_TEXT)
     if change >= 0 and base >= 0:
         share = change / total if total > 0 else 0.0
-        return _TEAL, _TEAL_TEXT, share
+        return rise, rise_text, share
     if change < 0:
         if base > 0:
             share = min(1.0, abs(change) / base)
@@ -34,7 +38,7 @@ def donut_accent(base: float, change: float, total: float) -> tuple[str, str, fl
         share = min(1.0, change / abs(base))
     else:
         share = min(1.0, total / change)
-    return _TEAL, _TEAL_TEXT, share
+    return rise, rise_text, share
 
 
 _CELL = 360
@@ -142,7 +146,7 @@ def donut_group(
 ) -> str:
     """One donut in a shared SVG. Colors stay on the elements."""
     total = base + accumulated_change
-    accent, accent_text, share = donut_accent(base, accumulated_change, total)
+    accent, accent_text, share = donut_accent(base, accumulated_change, total, kind)
     base_width, accent_width = _ring_strokes(sheet)
     circumference = 2 * math.pi * sheet.radius
     segment = share * circumference
