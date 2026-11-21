@@ -54,7 +54,7 @@ COICOP_GUIDE_URL = (
     "unsdclassifications/COICOP_2018_pre_copy_edit_publication.pdf"
 )
 
-def render():
+def render_controls():
     st.caption(
         "🌍 Изберете държава, 🛒 категория от ХИПЦ и 🎯 сценарий, "
         "след което въведете 💶 месечна стойност. След 🔎 „Покажи“ "
@@ -65,8 +65,6 @@ def render():
 
     context = load_context()
     df = context.df
-    description_df = context.description_df
-    coicop_details = context.coicop_details
     countries = context.countries
     country_dropdown_labels = context.country_dropdown_labels
     coicop_values = context.coicop_values
@@ -147,20 +145,35 @@ def render():
         show_results = st.button(
             "🔎 Покажи",
             type="primary",
+            key="show_results_001",
         )
 
     if show_results:
-        st.session_state["results_visible"] = True
-        st.session_state["shown_selection"] = {
+        st.session_state["results_visible_001"] = True
+        st.session_state["shown_selection_001"] = {
             "country": selected_country,
             "coicop": selected_coicop,
             "scenario": selected_scenario,
             "scenario_level": selected_scenario_level,
             "entered_value": entered_value,
         }
+    return bool(show_results)
 
-    shown = st.session_state.get("shown_selection")
-    if st.session_state.get("results_visible") and shown:
+
+def render_results():
+    context = load_context()
+    df = context.df
+    description_df = context.description_df
+    coicop_details = context.coicop_details
+    country_dropdown_labels = context.country_dropdown_labels
+    coicop_labels = context.coicop_labels
+
+    shown = st.session_state.get("shown_selection_001")
+    if (
+        st.session_state.get("results_visible_001")
+        and isinstance(shown, dict)
+        and "scenario" in shown
+    ):
         selected_country = shown["country"]
         selected_coicop = shown["coicop"]
         selected_scenario = shown["scenario"]
@@ -414,3 +427,8 @@ def render():
             if show_sources:
                 render_history(filtered_df, percentage_values, overview_rows, coicop_labels, selected_coicop, country_dropdown_labels, selected_country)
                 render_description(description_df, selected_coicop, selected_details)
+
+
+def render():
+    render_controls()
+    render_results()

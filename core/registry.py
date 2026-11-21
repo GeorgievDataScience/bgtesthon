@@ -50,8 +50,15 @@ def discover_analyses() -> list[Analysis]:
     return sorted(results, key=lambda a: (a.order, a.id))
 
 def load_analysis(analysis: Analysis):
+    """Return the controls above Покажи and the results below it."""
     module = import_module(analysis.package)
+    render_controls = getattr(module, "render_controls", None)
+    render_results = getattr(module, "render_results", None)
+    if callable(render_controls) and callable(render_results):
+        return render_controls, render_results
     render = getattr(module, "render", None)
-    if not callable(render):
-        raise TypeError(f"{analysis.package} must expose render()")
-    return render
+    if callable(render):
+        return render, lambda: None
+    raise TypeError(
+        f"{analysis.package} must expose render_controls() and render_results()"
+    )

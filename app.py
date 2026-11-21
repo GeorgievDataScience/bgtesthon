@@ -19,8 +19,16 @@ selected = st.selectbox(
     key="selected_analysis_v2",
 )
 try:
-    render = load_analysis(selected)
+    render_controls, _selected_results = load_analysis(selected)
 except (ImportError, AttributeError, TypeError) as exc:
     st.error(f"Анализът не може да бъде зареден: {exc}")
     st.stop()
-render()
+if render_controls():
+    st.session_state["shown_analysis_id"] = selected.id
+if st.session_state.get("shown_analysis_id") == selected.id:
+    try:
+        _shown_controls, render_results = load_analysis(selected)
+    except (ImportError, AttributeError, TypeError) as exc:
+        st.error(f"Анализът не може да бъде зареден: {exc}")
+    else:
+        render_results()
